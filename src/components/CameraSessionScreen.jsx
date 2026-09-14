@@ -159,12 +159,12 @@ export default function CameraSessionScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       startCountdownSequence();
-    }, 800);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [currentPoseIndex]);
 
   return (
-    <div className="relative w-full h-screen flex flex-col justify-between items-center p-6 bg-slate-950 text-white select-none overflow-hidden">
+    <div className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-8 bg-grid-notebook text-slate-900 overflow-hidden select-none">
       {/* Hidden Canvas for capturing */}
       <canvas ref={canvasRef} className="hidden" />
 
@@ -173,35 +173,85 @@ export default function CameraSessionScreen() {
         <div className="absolute inset-0 bg-white z-50 animate-flash pointer-events-none" />
       )}
 
-      {/* Top Session Progress Bar */}
-      <div className="w-full max-w-5xl flex justify-between items-center z-10">
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-2xl bg-blue-600/30 border border-blue-500/40 text-blue-300 font-display font-bold text-lg flex items-center gap-2">
-            <Camera className="w-5 h-5" />
-            <span>POSE {currentPoseIndex + 1} DARI {totalPoses}</span>
+      {/* ================= BACKGROUND STICKER ORNAMENTS ================= */}
+      {/* 1. Sparkle Star Kuning (Kiri Atas) */}
+      <div className="absolute top-8 left-6 sm:left-10 z-0 pointer-events-none animate-float opacity-80">
+        <svg className="w-9 h-9 sm:w-11 sm:h-11 overflow-visible" viewBox="0 0 100 100" fill="none">
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#1e2336" transform="translate(4, 5)" />
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#fef08a" stroke="#1e2336" strokeWidth="6" strokeLinejoin="round" />
+        </svg>
+      </div>
+
+      {/* 2. Daisy Smiley Flower (Kanan Atas) */}
+      <div className="absolute top-8 right-6 sm:right-10 z-0 pointer-events-none animate-float-reverse opacity-80">
+        <svg className="w-10 h-10 sm:w-12 sm:h-12 overflow-visible" viewBox="0 0 100 100" fill="none">
+          <circle cx="54" cy="54" r="38" fill="#1e2336" />
+          <circle cx="50" cy="50" r="38" fill="#fef08a" stroke="#1e2336" strokeWidth="6" />
+          <circle cx="50" cy="50" r="20" fill="#e9d5ff" stroke="#1e2336" strokeWidth="5" />
+          <circle cx="43" cy="46" r="3" fill="#1e2336" />
+          <circle cx="57" cy="46" r="3" fill="#1e2336" />
+          <path d="M 42 54 C 45 60 55 60 58 54" stroke="#1e2336" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      </div>
+
+      {/* 3. 3D Heart Sticker (Kiri Bawah) */}
+      <div className="absolute bottom-16 left-6 sm:left-10 z-0 pointer-events-none animate-float-reverse opacity-80">
+        <svg className="w-10 h-10 sm:w-12 sm:h-12 overflow-visible" viewBox="0 0 100 100" fill="none">
+          <path d="M 50 30 C 50 10 25 10 15 25 C 0 45 35 70 50 88 C 65 70 100 45 85 25 C 75 10 50 10 50 30 Z" fill="#1e2336" transform="translate(4, 5) rotate(-12 50 50)" />
+          <path d="M 50 30 C 50 10 25 10 15 25 C 0 45 35 70 50 88 C 65 70 100 45 85 25 C 75 10 50 10 50 30 Z" fill="#fda4af" stroke="#1e2336" strokeWidth="6" strokeLinejoin="round" transform="rotate(-12 50 50)" />
+        </svg>
+      </div>
+
+      {/* 4. 3D Lightning Bolt (Kanan Bawah) */}
+      <div className="absolute bottom-16 right-8 sm:right-12 z-0 pointer-events-none animate-float opacity-80">
+        <svg className="w-9 h-11 sm:w-11 sm:h-14 overflow-visible" viewBox="0 0 100 120" fill="none">
+          <path d="M 55 5 L 15 65 L 48 65 L 35 115 L 85 45 L 50 45 Z" fill="#1e2336" transform="translate(4, 4) rotate(8 50 60)" />
+          <path d="M 55 5 L 15 65 L 48 65 L 35 115 L 85 45 L 50 45 Z" fill="#fde047" stroke="#1e2336" strokeWidth="6" strokeLinejoin="round" transform="rotate(8 50 60)" />
+        </svg>
+      </div>
+
+      {/* ================= TOP HEADER ================= */}
+      <div className="w-full max-w-5xl flex justify-between items-center z-20">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-[#272a33] text-white shadow-md">
+            <Camera className="w-6 h-6" />
           </div>
-          <span className="text-slate-400 text-sm hidden sm:inline">
-            Template: {selectedFrame.name}
-          </span>
+          <div>
+            <h2 
+              className="text-2xl md:text-3xl font-black text-[#343a59] leading-tight tracking-tight uppercase"
+              style={{ fontFamily: "'Dela Gothic One', 'Bungee', 'Fredoka', sans-serif" }}
+            >
+              POSE {currentPoseIndex + 1} DARI {totalPoses}
+            </h2>
+            <p className="text-slate-600 text-xs sm:text-sm font-medium">
+              Template: <span className="font-bold text-[#272a33]">{selectedFrame.name}</span> • Siapkan gaya terbaikmu!
+            </p>
+          </div>
         </div>
 
-        {/* Mirror Toggle & Info */}
+        {/* Right Action: Mirror Toggle & Page 04 Badge */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsMirrored(!isMirrored)}
-            className={`p-3 rounded-xl glass-card flex items-center gap-2 text-xs font-semibold transition-all ${
-              isMirrored ? 'text-blue-400 border-blue-500/50' : 'text-slate-400'
-            }`}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#272a33] text-white shadow-md hover:bg-[#1a1c22] hover:scale-105 active:scale-95 transition-all text-xs font-bold font-mono-tech cursor-pointer border border-[#272a33]"
             title="Cerminkan Kamera (Mirror)"
           >
-            <FlipHorizontal className="w-4 h-4" />
+            <FlipHorizontal className="w-4 h-4 text-amber-300" />
             <span>Mirror: {isMirrored ? 'ON' : 'OFF'}</span>
           </button>
+
+          {/* Page 04 Badge */}
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#272a33] text-white shadow-md">
+            <span className="text-sm font-bold tracking-wide font-display pl-1">Page</span>
+            <div className="flex items-center justify-center bg-white text-[#272a33] font-black text-xs px-2.5 py-0.5 rounded-full font-mono-tech">
+              04
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Camera Viewfinder with Guides */}
-      <div className="relative w-full max-w-4xl flex-1 my-3 rounded-3xl overflow-hidden glass-panel border-2 border-slate-700/60 shadow-2xl flex items-center justify-center bg-black">
+      {/* ================= MAIN CAMERA VIEWFINDER ================= */}
+      <div className="relative w-full max-w-4xl flex-1 my-3 rounded-3xl overflow-hidden border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33] flex items-center justify-center bg-black z-10">
         {/* Live Video Feed */}
         <video
           ref={videoRef}
@@ -216,54 +266,62 @@ export default function CameraSessionScreen() {
         {/* Fallback Simulation UI if no camera */}
         {!streamActive && (
           <div className="flex flex-col items-center justify-center p-8 text-center text-slate-400 max-w-md">
-            <div className="w-20 h-20 rounded-full bg-slate-800/80 flex items-center justify-center mb-4 text-blue-400">
+            <div className="w-20 h-20 rounded-full bg-slate-800/90 flex items-center justify-center mb-4 text-amber-300 border-2 border-[#272a33] shadow-lg">
               <Camera className="w-10 h-10 animate-pulse" />
             </div>
-            <h3 className="text-white font-bold text-lg mb-1">Simulasi Feed Kamera Aktif</h3>
-            <p className="text-xs text-slate-400 mb-4">
+            <h3 className="text-white font-display font-bold text-lg mb-1">Simulasi Feed Kamera Aktif</h3>
+            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
               {cameraError || 'Kamera sedang disiapkan. Jepretan foto otomatis disimulasikan secara jernih.'}
             </p>
           </div>
         )}
 
-        {/* Viewfinder Overlay Guides (Crop framing) */}
-        <div className="absolute inset-8 border border-white/20 rounded-2xl pointer-events-none flex flex-col justify-between p-4">
+        {/* Viewfinder Overlay Guides (Retro Crop Framing) */}
+        <div className="absolute inset-6 sm:inset-8 border border-white/30 rounded-2xl pointer-events-none flex flex-col justify-between p-4 z-20">
           <div className="flex justify-between">
-            <div className="w-6 h-6 border-t-2 border-l-2 border-blue-400" />
-            <div className="w-6 h-6 border-t-2 border-r-2 border-blue-400" />
+            <div className="w-7 h-7 border-t-4 border-l-4 border-amber-300 rounded-tl-lg shadow-sm" />
+            <div className="w-7 h-7 border-t-4 border-r-4 border-amber-300 rounded-tr-lg shadow-sm" />
           </div>
           <div className="flex justify-between">
-            <div className="w-6 h-6 border-b-2 border-l-2 border-blue-400" />
-            <div className="w-6 h-6 border-b-2 border-r-2 border-blue-400" />
+            <div className="w-7 h-7 border-b-4 border-l-4 border-amber-300 rounded-bl-lg shadow-sm" />
+            <div className="w-7 h-7 border-b-4 border-r-4 border-amber-300 rounded-br-lg shadow-sm" />
           </div>
         </div>
 
         {/* Giant Countdown Overlay */}
         {countdown !== null && (
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center z-30 animate-pulse-slow">
-            <div className="w-44 h-44 rounded-full bg-gradient-to-tr from-blue-600 via-purple-600 to-pink-600 p-1 flex items-center justify-center shadow-2xl shadow-purple-500/50">
-              <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
-                <span className="font-display font-black text-7xl md:text-8xl text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-200">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex flex-col items-center justify-center z-30 animate-pulse-slow">
+            <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-[#fde047] p-2 flex items-center justify-center border-4 border-[#272a33] shadow-[8px_8px_0px_#272a33] animate-bounce-subtle">
+              <div className="w-full h-full rounded-full bg-[#272a33] flex items-center justify-center">
+                <span 
+                  className="font-black text-6xl sm:text-7xl text-[#fef08a] tracking-wider uppercase drop-shadow-md"
+                  style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+                >
                   {countdown}
                 </span>
               </div>
             </div>
-            <p className="text-white font-display font-bold text-2xl mt-4 tracking-wider flex items-center gap-2">
-              <Smile className="w-6 h-6 text-amber-400" />
-              <span>SIAP-SIAP POSE!</span>
-            </p>
+            <div className="mt-5 px-6 py-2.5 rounded-full bg-[#272a33] border-2 border-[#fde047] shadow-[4px_4px_0px_#272a33] flex items-center gap-2.5">
+              <Smile className="w-6 h-6 text-amber-300" />
+              <span 
+                className="text-white font-black text-lg sm:text-xl tracking-wider uppercase"
+                style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+              >
+                SIAP-SIAP POSE!
+              </span>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Shutter Action Bar */}
-      <div className="w-full max-w-xl flex items-center justify-center gap-6 z-10">
+      {/* ================= BOTTOM SHUTTER ACTION BAR ================= */}
+      <div className="w-full max-w-xl flex items-center justify-center gap-6 z-20 pt-1">
         <button
           onClick={startCountdownSequence}
           disabled={countdown !== null}
-          className="px-10 py-4 rounded-full bg-gradient-to-r from-pink-500 via-purple-600 to-blue-600 hover:from-pink-400 hover:to-blue-500 text-white font-display font-bold text-xl shadow-2xl shadow-purple-600/40 flex items-center gap-3 transition-transform transform active:scale-95 disabled:opacity-50"
+          className="px-10 sm:px-14 py-4 sm:py-4.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#fde047] font-display font-black text-base sm:text-lg tracking-wide flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Camera className="w-6 h-6" />
+          <Camera className="w-6 h-6 text-amber-300" />
           <span>{countdown !== null ? 'Sedang Menghitung...' : 'Jepret Foto Sekarang'}</span>
         </button>
       </div>
