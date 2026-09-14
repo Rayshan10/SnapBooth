@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useBooth } from '../context/BoothContext';
-import { Camera, Sparkles, QrCode, Printer, Heart, ShieldCheck, Zap } from 'lucide-react';
 
 export default function AttractScreen() {
-  const { startNewSession, eventSettings, setIsAdminOpen } = useBooth();
+  const { startNewSession, setIsAdminOpen } = useBooth();
   const [adminTapCount, setAdminTapCount] = useState(0);
 
-  // Hidden admin gesture: tap top-right 3 times
+  // Hidden admin gesture: tap "Page 01" badge 3 times
   const handleAdminTap = (e) => {
     e.stopPropagation();
     const nextCount = adminTapCount + 1;
@@ -22,100 +21,149 @@ export default function AttractScreen() {
   return (
     <div 
       onClick={startNewSession}
-      className="relative w-full h-screen flex flex-col justify-between items-center p-8 bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 overflow-hidden cursor-pointer select-none"
+      className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-10 bg-grid-notebook text-slate-900 overflow-hidden cursor-pointer select-none"
     >
-      {/* Background Animated Gradient Blobs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '1.5s' }} />
-
-      {/* Top Bar with Event Header & Hidden Admin Trigger */}
-      <div className="w-full flex justify-between items-center z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-            <Camera className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-display font-bold text-lg text-white tracking-wide">SNAPBOOTH</h3>
-            <p className="text-xs text-slate-400 font-mono-tech">{eventSettings.location}</p>
-          </div>
-        </div>
-
-        {/* Hidden Admin Trigger (Top Right) */}
+      {/* Top Bar with "Page 01" Badge (Top Right) */}
+      <div className="w-full flex justify-end items-center z-20">
         <button 
           onClick={handleAdminTap}
-          className="p-3 rounded-full hover:bg-white/5 transition-all text-slate-500 text-xs font-mono-tech"
-          title="Admin Mode (Tap 3x)"
+          className="group relative flex items-center gap-2.5 px-4 py-2 md:px-5 md:py-2.5 rounded-full bg-[#272a33] text-white shadow-md hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+          title="Mode Admin (Ketuk 3x)"
         >
-          {adminTapCount > 0 ? `TAP ${adminTapCount}/3` : 'v1.0'}
+          <span className="text-sm md:text-base font-bold tracking-wide font-display pl-1">
+            {adminTapCount > 0 ? `Admin ${adminTapCount}/3` : 'Page'}
+          </span>
+          <div className="flex items-center justify-center bg-white text-[#272a33] font-black text-xs md:text-sm px-2.5 py-0.5 rounded-full font-mono-tech">
+            01
+          </div>
         </button>
       </div>
 
-      {/* Main Center Call-to-Action */}
-      <div className="flex flex-col items-center text-center z-10 max-w-2xl my-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel text-blue-400 text-sm font-medium mb-6 animate-bounce">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>{eventSettings.title}</span>
+      {/* Main Center Typography & 3D Artwork (Dead Center in Screen) */}
+      <div className="w-full flex-1 flex items-center justify-center my-auto z-10">
+        
+        {/* Central Anchor Block */}
+        <div className="relative inline-flex flex-col items-center justify-center text-center">
+          
+          {/* ================= 3D DONUT (POJOK KIRI ATAS HURUF 'S') ================= */}
+          <div className="absolute -top-4 sm:-top-6 md:-top-9 left-4 sm:left-6 md:left-8 z-20 pointer-events-none animate-float">
+            <svg 
+              className="w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 overflow-visible" 
+              viewBox="0 0 100 100" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* 3D Bottom Shadow */}
+              <circle cx="53" cy="53" r="36" fill="#1e2336" />
+              {/* Outer Ring */}
+              <circle cx="48" cy="48" r="36" fill="#e4ecfc" stroke="#1e2336" strokeWidth="6.5" />
+              {/* Inner Hole with 3D shadow */}
+              <circle cx="53" cy="53" r="15" fill="#1e2336" />
+              <circle cx="48" cy="48" r="15" fill="#f3edd9" stroke="#1e2336" strokeWidth="6.5" />
+              {/* White Highlight */}
+              <path 
+                d="M 28 34 A 24 24 0 0 1 58 24" 
+                stroke="#ffffff" 
+                strokeWidth="4" 
+                strokeLinecap="round" 
+              />
+            </svg>
+          </div>
+
+          {/* ================= 3D CROSS / PLUS (POJOK KANAN BAWAH HURUF 'H') ================= */}
+          <div className="absolute -bottom-4 md:-bottom-7 -right-5 md:-right-8 z-20 pointer-events-none animate-float-reverse">
+            <svg 
+              className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 overflow-visible" 
+              viewBox="0 0 100 100" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* 3D Extrusion Shadow */}
+              <path
+                d="M 34 12 L 66 12 L 66 34 L 88 34 L 88 66 L 66 66 L 66 88 L 34 88 L 34 66 L 12 66 L 12 34 L 34 34 Z"
+                fill="#1e2336"
+                transform="translate(5, 5) rotate(18 50 50)"
+              />
+              {/* Plus Body */}
+              <path
+                d="M 34 12 L 66 12 L 66 34 L 88 34 L 88 66 L 66 66 L 66 88 L 34 88 L 34 66 L 12 66 L 12 34 L 34 34 Z"
+                fill="#bdd2f5"
+                stroke="#1e2336"
+                strokeWidth="6.5"
+                strokeLinejoin="round"
+                transform="rotate(18 50 50)"
+              />
+              {/* White Highlight */}
+              <path
+                d="M 40 22 L 60 22"
+                stroke="#ffffff"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                transform="rotate(18 50 50)"
+              />
+            </svg>
+          </div>
+
+          {/* Typography Container */}
+          <div 
+            className="flex flex-col items-center justify-center text-[#343a59] leading-[0.88] tracking-[-0.04em] uppercase select-none"
+            style={{ fontFamily: "'Dela Gothic One', 'Bungee', 'Titan One', sans-serif" }}
+          >
+            {/* Row 1: SNAP */}
+            <div className="text-[17vw] sm:text-[15vw] md:text-[145px] lg:text-[180px] font-black scale-y-95">
+              SNAP
+            </div>
+
+            {/* Row 2: BOOTH */}
+            <div className="text-[17vw] sm:text-[15vw] md:text-[145px] lg:text-[180px] font-black scale-y-95">
+              BOOTH
+            </div>
+          </div>
+
+          {/* ================= TILTED "Click to Start" BUTTON (DIGESER KE BAWAH) ================= */}
+          <div className="absolute -bottom-6 sm:-bottom-8 md:-bottom-10 left-1/2 transform -translate-x-1/2 -rotate-[6.5deg] z-30">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                startNewSession();
+              }}
+              className="px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-4.5 rounded-full bg-[#272a33] text-white font-['Fredoka','Plus_Jakarta_Sans',sans-serif] font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-wide shadow-2xl shadow-slate-950/40 hover:bg-[#1a1c22] hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-slate-700/40 cursor-pointer"
+            >
+              <span className="whitespace-nowrap select-none drop-shadow-sm">
+                Click to Start
+              </span>
+            </button>
+          </div>
+
         </div>
 
-        <h1 className="font-display text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400 tracking-tight leading-none mb-6">
-          CAPTURE THE <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 glow-text">
-            MOMENT
-          </span>
-        </h1>
-
-        <p className="text-slate-300 text-lg md:text-xl font-light mb-10 max-w-lg">
-          {eventSettings.subtitle} • Cetak foto instan & unduh softfile langsung ke smartphone kamu!
-        </p>
-
-        {/* Start Button */}
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition duration-500 animate-pulse-slow"></div>
-          <button className="relative px-12 py-5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-display font-bold text-2xl tracking-wider shadow-2xl flex items-center gap-4 transition-transform transform group-hover:scale-105 active:scale-95">
-            <Zap className="w-7 h-7 text-amber-300 fill-amber-300" />
-            <span>SENTUH UNTUK MEMULAI</span>
-          </button>
-        </div>
-
-        <p className="text-slate-400 text-sm font-mono-tech mt-6 flex items-center gap-2">
-          <span>Tarif Sesi:</span>
-          <span className="text-emerald-400 font-bold text-base">
-            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(eventSettings.price)}
-          </span>
-          <span className="text-slate-500">• Pembayaran via QRIS</span>
-        </p>
       </div>
 
-      {/* Feature Highlights Footer */}
-      <div className="w-full max-w-4xl grid grid-cols-3 gap-4 z-10">
-        <div className="glass-card p-4 rounded-2xl flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-blue-500/20 text-blue-400">
-            <QrCode className="w-5 h-5" />
+      {/* Bottom Left: Instagram Handle */}
+      <div className="w-full flex justify-between items-end z-20">
+        <div className="flex items-center gap-2.5 md:gap-3">
+          {/* Instagram Logo */}
+          <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center p-1 md:p-1.5 shadow-sm">
+            <svg 
+              className="w-full h-full text-white fill-none stroke-current stroke-2" 
+              viewBox="0 0 24 24" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-white">QRIS Instan</h4>
-            <p className="text-xs text-slate-400">Semua e-wallet & bank</p>
-          </div>
+
+          <span className="font-display font-extrabold text-sm sm:text-base md:text-lg text-[#272a33] tracking-wide">
+            snapbooth.id
+          </span>
         </div>
 
-        <div className="glass-card p-4 rounded-2xl flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-purple-500/20 text-purple-400">
-            <Printer className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-white">Cetak Otomatis</h4>
-            <p className="text-xs text-slate-400">Foto strip tajam & glossy</p>
-          </div>
-        </div>
-
-        <div className="glass-card p-4 rounded-2xl flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-pink-500/20 text-pink-400">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-white">Softfile QR</h4>
-            <p className="text-xs text-slate-400">Scan & unduh ke HP</p>
-          </div>
+        {/* Subtle touch indicator for kiosk guests */}
+        <div className="text-xs text-slate-500 font-mono-tech hidden sm:block font-medium">
+          Sentuh layar untuk memulai sesi foto
         </div>
       </div>
     </div>

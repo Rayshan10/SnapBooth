@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Lilita+One&family=Titan+One&family=Bungee&family=Black+Han+Sans&family=Fredoka:wght@700;900&family=Plus+Jakarta+Sans:wght@700;800;900&display=swap');
 @import "tailwindcss";
 
 @layer base {
@@ -84,6 +85,34 @@
   opacity: 0.7;
 }
 
+/* Grid Notebook Pattern for Attract Screen */
+.bg-grid-notebook {
+  background-color: #f3edd9;
+  background-image: 
+    linear-gradient(to right, rgba(175, 163, 138, 0.28) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(175, 163, 138, 0.28) 1.5px, transparent 1.5px);
+  background-size: 46px 46px;
+}
+
+/* Float Animation for 3D Elements */
+@keyframes float-subtle {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(1.5deg); }
+}
+
+.animate-float {
+  animation: float-subtle 4s ease-in-out infinite;
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(6px) rotate(-1.5deg); }
+}
+
+.animate-float-reverse {
+  animation: float-reverse 4.5s ease-in-out infinite;
+}
+
 /* Custom Scrollbar for Touch Screens */
 ::-webkit-scrollbar {
   width: 6px;
@@ -99,3 +128,4 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.6);
 }
+
