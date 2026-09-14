@@ -23,7 +23,70 @@ export default function AttractScreen() {
       onClick={startNewSession}
       className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-10 bg-grid-notebook text-slate-900 overflow-hidden cursor-pointer select-none"
     >
-      {/* Top Bar with "Page 01" Badge (Top Right) */}
+      {/* ================= BACKGROUND STICKER ORNAMENTS ================= */}
+      
+      {/* 1. Sparkle Star Kuning (Kiri Atas) */}
+      <div className="absolute top-10 sm:top-14 left-8 sm:left-14 md:left-20 z-0 pointer-events-none animate-float">
+        <svg className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 overflow-visible" viewBox="0 0 100 100" fill="none">
+          {/* 3D Shadow */}
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#1e2336" transform="translate(5, 5)" />
+          {/* Main Body */}
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#fef08a" stroke="#1e2336" strokeWidth="6" strokeLinejoin="round" />
+          {/* Inner Highlight */}
+          <circle cx="50" cy="50" r="8" fill="#ffffff" />
+        </svg>
+      </div>
+
+      {/* 2. Sparkle Mini Lilac (Tengah Atas) */}
+      <div className="absolute top-8 sm:top-12 left-[44%] sm:left-[48%] z-0 pointer-events-none animate-float-reverse">
+        <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 overflow-visible" viewBox="0 0 100 100" fill="none">
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#1e2336" transform="translate(4, 4)" />
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#e9d5ff" stroke="#1e2336" strokeWidth="6" />
+        </svg>
+      </div>
+
+      {/* 3. Retro 3D Heart Sticker (Sisi Kiri Layar) */}
+      <div className="absolute top-[42%] left-6 sm:left-10 md:left-16 z-0 pointer-events-none animate-float-reverse">
+        <svg className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 overflow-visible" viewBox="0 0 100 100" fill="none">
+          {/* 3D Shadow */}
+          <path d="M 50 30 C 50 10 25 10 15 25 C 0 45 35 70 50 88 C 65 70 100 45 85 25 C 75 10 50 10 50 30 Z" fill="#1e2336" transform="translate(5, 6) rotate(-12 50 50)" />
+          {/* Heart Body */}
+          <path d="M 50 30 C 50 10 25 10 15 25 C 0 45 35 70 50 88 C 65 70 100 45 85 25 C 75 10 50 10 50 30 Z" fill="#fda4af" stroke="#1e2336" strokeWidth="6.5" strokeLinejoin="round" transform="rotate(-12 50 50)" />
+          {/* Highlight */}
+          <path d="M 28 26 C 24 34 26 44 32 50" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" transform="rotate(-12 50 50)" />
+        </svg>
+      </div>
+
+      {/* 4. 3D Lightning Bolt / Petir Retro (Sisi Kanan Layar) */}
+      <div className="absolute top-[32%] right-6 sm:right-10 md:right-16 z-0 pointer-events-none animate-float">
+        <svg className="w-11 h-14 sm:w-14 sm:h-18 md:w-16 md:h-20 overflow-visible" viewBox="0 0 100 120" fill="none">
+          {/* 3D Shadow */}
+          <path d="M 55 5 L 15 65 L 48 65 L 35 115 L 85 45 L 50 45 Z" fill="#1e2336" transform="translate(5, 5) rotate(8 50 60)" />
+          {/* Lightning Body */}
+          <path d="M 55 5 L 15 65 L 48 65 L 35 115 L 85 45 L 50 45 Z" fill="#fde047" stroke="#1e2336" strokeWidth="6.5" strokeLinejoin="round" transform="rotate(8 50 60)" />
+          {/* Highlight */}
+          <path d="M 50 16 L 28 58" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" transform="rotate(8 50 60)" />
+        </svg>
+      </div>
+
+      {/* 5. Sparkle Star Pastel Blue (Kanan Bawah) */}
+      <div className="absolute bottom-16 sm:bottom-20 right-12 sm:right-20 md:right-28 z-0 pointer-events-none animate-float-reverse">
+        <svg className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 overflow-visible" viewBox="0 0 100 100" fill="none">
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#1e2336" transform="translate(4, 5)" />
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#bfdbfe" stroke="#1e2336" strokeWidth="6" strokeLinejoin="round" />
+          <circle cx="50" cy="50" r="7" fill="#ffffff" />
+        </svg>
+      </div>
+
+      {/* 6. Mini Sparkle Hijau Mint (Kiri Bawah dekat Instagram) */}
+      <div className="absolute bottom-20 sm:bottom-24 left-[28%] sm:left-[30%] z-0 pointer-events-none animate-float">
+        <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 overflow-visible" viewBox="0 0 100 100" fill="none">
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#1e2336" transform="translate(3, 4)" />
+          <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#a7f3d0" stroke="#1e2336" strokeWidth="6" />
+        </svg>
+      </div>
+
+      {/* ================= TOP BAR (PAGE 01 BADGE) ================= */}
       <div className="w-full flex justify-end items-center z-20">
         <button 
           onClick={handleAdminTap}
@@ -39,13 +102,13 @@ export default function AttractScreen() {
         </button>
       </div>
 
-      {/* Main Center Typography & 3D Artwork (Dead Center in Screen) */}
+      {/* ================= MAIN CENTER TYPOGRAPHY & 3D ARTWORK ================= */}
       <div className="w-full flex-1 flex items-center justify-center my-auto z-10">
         
         {/* Central Anchor Block */}
         <div className="relative inline-flex flex-col items-center justify-center text-center">
           
-          {/* ================= 3D DONUT (POJOK KIRI ATAS HURUF 'S') ================= */}
+          {/* 3D DONUT (POJOK KIRI ATAS HURUF 'S') */}
           <div className="absolute -top-4 sm:-top-6 md:-top-9 left-4 sm:left-6 md:left-8 z-20 pointer-events-none animate-float">
             <svg 
               className="w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 overflow-visible" 
@@ -70,7 +133,7 @@ export default function AttractScreen() {
             </svg>
           </div>
 
-          {/* ================= 3D CROSS / PLUS (POJOK KANAN BAWAH HURUF 'H') ================= */}
+          {/* 3D CROSS / PLUS (POJOK KANAN BAWAH HURUF 'H') */}
           <div className="absolute -bottom-4 md:-bottom-7 -right-5 md:-right-8 z-20 pointer-events-none animate-float-reverse">
             <svg 
               className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 overflow-visible" 
@@ -120,7 +183,7 @@ export default function AttractScreen() {
             </div>
           </div>
 
-          {/* ================= TILTED "Click to Start" BUTTON (DIGESER KE BAWAH) ================= */}
+          {/* TILTED "Click to Start" BUTTON */}
           <div className="absolute -bottom-6 sm:-bottom-8 md:-bottom-10 left-1/2 transform -translate-x-1/2 -rotate-[6.5deg] z-30">
             <button
               onClick={(e) => {
@@ -139,7 +202,7 @@ export default function AttractScreen() {
 
       </div>
 
-      {/* Bottom Left: Instagram Handle */}
+      {/* ================= BOTTOM FOOTER ================= */}
       <div className="w-full flex justify-between items-end z-20">
         <div className="flex items-center gap-2.5 md:gap-3">
           {/* Instagram Logo */}
