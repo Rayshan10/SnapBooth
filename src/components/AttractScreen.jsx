@@ -86,6 +86,18 @@ export default function AttractScreen() {
         </svg>
       </div>
 
+      {/* 7. Retro 3D Camera Sticker (Kiri Bawah) */}
+      <div className="absolute bottom-24 left-8 sm:left-14 md:left-20 z-0 pointer-events-none animate-float-reverse">
+        <svg className="w-11 h-11 sm:w-13 sm:h-13 md:w-16 md:h-16 overflow-visible" viewBox="0 0 100 100" fill="none">
+          <rect x="15" y="30" width="70" height="50" rx="12" fill="#1e2336" transform="translate(4, 5) rotate(-6 50 50)" />
+          <rect x="15" y="30" width="70" height="50" rx="12" fill="#bdd2f5" stroke="#1e2336" strokeWidth="6" transform="rotate(-6 50 50)" />
+          <rect x="35" y="18" width="30" height="15" rx="5" fill="#bdd2f5" stroke="#1e2336" strokeWidth="5" transform="rotate(-6 50 50)" />
+          <circle cx="50" cy="55" r="16" fill="#1e2336" transform="rotate(-6 50 50)" />
+          <circle cx="50" cy="55" r="9" fill="#e4ecfc" transform="rotate(-6 50 50)" />
+          <circle cx="47" cy="52" r="3" fill="#ffffff" transform="rotate(-6 50 50)" />
+        </svg>
+      </div>
+
       {/* ================= TOP BAR (PAGE 01 BADGE) ================= */}
       <div className="w-full flex justify-end items-center z-20">
         <button 
