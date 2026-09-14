@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useBooth } from '../context/BoothContext';
 import { FRAME_TEMPLATES } from '../utils/canvasRenderer';
-import { LayoutGrid, Sparkles, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { LayoutGrid, Check, ArrowRight } from 'lucide-react';
 
 export default function FrameSelectionScreen() {
-  const { selectedFrame, handleSelectFrame, setStep, STEPS } = useBooth();
+  const { selectedFrame, handleSelectFrame } = useBooth();
   const [activeTemplate, setActiveTemplate] = useState(selectedFrame || FRAME_TEMPLATES[0]);
 
   return (
@@ -167,18 +167,10 @@ export default function FrameSelectionScreen() {
       </div>
 
       {/* ================= BOTTOM ACTION BAR ================= */}
-      <div className="w-full max-w-6xl flex justify-between items-center pt-3 border-t-2 border-[#272a33]/20 z-20">
-        <button
-          onClick={() => setStep(STEPS.PAYMENT)}
-          className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#272a33] text-white shadow-md hover:bg-[#1a1c22] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer font-bold text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Kembali</span>
-        </button>
-
+      <div className="w-full max-w-6xl flex justify-center items-center pt-3 border-t-2 border-[#272a33]/20 z-20">
         <button
           onClick={() => handleSelectFrame(activeTemplate)}
-          className="px-8 sm:px-12 py-3.5 sm:py-4 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[4px_4px_0px_#3b82f6] font-display font-black text-sm sm:text-base tracking-wide flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="px-10 sm:px-16 py-3.5 sm:py-4 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#3b82f6] font-display font-black text-sm sm:text-base tracking-wide flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
         >
           <span>Mulai Sesi Foto ({activeTemplate.poses} Pose)</span>
           <ArrowRight className="w-5 h-5" />
