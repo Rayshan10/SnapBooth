@@ -13,6 +13,8 @@ export default function CameraSessionScreen() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const activeStreamRef = useRef(null);
+  const intervalRef = useRef(null);
 
   const [streamActive, setStreamActive] = useState(false);
   const [countdown, setCountdown] = useState(null); // null or 3, 2, 1
@@ -20,50 +22,140 @@ export default function CameraSessionScreen() {
   const [isMirrored, setIsMirrored] = useState(true);
   const [cameraError, setCameraError] = useState(null);
 
+  const isMirroredRef = useRef(isMirrored);
+  useEffect(() => {
+    isMirroredRef.current = isMirrored;
+  }, [isMirrored]);
+
   const totalPoses = selectedFrame.poses;
   const countdownInitial = eventSettings.countdownSec || 3;
 
   // Initialize Camera Stream
   useEffect(() => {
-    let currentStream = null;
+    let isMounted = true;
 
     async function startCamera() {
       try {
         setCameraError(null);
-        const constraints = {
-          video: {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            facingMode: 'user',
-            deviceId: eventSettings.cameraDeviceId ? { exact: eventSettings.cameraDeviceId } : undefined
-          },
+        let constraints = {
+          video: eventSettings.cameraDeviceId 
+            ? { deviceId: { exact: eventSettings.cameraDeviceId }, width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' }
+            : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
           audio: false
         };
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        currentStream = stream;
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (e1) {
+          // Fallback to basic video constraint
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+
+        if (!isMounted) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        activeStreamRef.current = stream;
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current.play();
-            setStreamActive(true);
+            if (videoRef.current) {
+              videoRef.current.play().catch(console.warn);
+              setStreamActive(true);
+            }
           };
+          videoRef.current.play().catch(console.warn);
+          setStreamActive(true);
         }
       } catch (err) {
         console.warn('Camera access error or no webcam found:', err);
-        setCameraError('Kamera tidak terdeteksi / izin ditolak. Menggunakan mode simulasi foto otomatis.');
-        setStreamActive(false);
+        if (isMounted) {
+          setCameraError('Kamera tidak terdeteksi / izin ditolak. Menggunakan mode simulasi foto otomatis.');
+          setStreamActive(false);
+        }
       }
     }
 
     startCamera();
 
     return () => {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
+      isMounted = false;
+      if (activeStreamRef.current) {
+        activeStreamRef.current.getTracks().forEach(track => track.stop());
+        activeStreamRef.current = null;
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
   }, [eventSettings.cameraDeviceId]);
+
+  // Capture Photo Function
+  const triggerShutterCapture = () => {
+    // Flash Animation
+    setIsFlashing(true);
+    setTimeout(() => setIsFlashing(false), 500);
+
+    const canvas = canvasRef.current || document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const vid = videoRef.current;
+
+    // Check if video element is ready and has valid dimensions
+    if (vid && vid.videoWidth > 0 && vid.videoHeight > 0) {
+      canvas.width = vid.videoWidth;
+      canvas.height = vid.videoHeight;
+
+      ctx.save();
+      if (isMirroredRef.current) {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      const photoDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      handlePhotoCaptured(photoDataUrl);
+      return;
+    }
+
+    // Fallback synthetic photo generator ONLY if webcam is genuinely not available
+    canvas.width = 1280;
+    canvas.height = 960;
+
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    const colors = [
+      ['#3b82f6', '#8b5cf6'],
+      ['#ec4899', '#f43f5e'],
+      ['#10b981', '#06b6d4'],
+      ['#f59e0b', '#d97706']
+    ];
+    const pickColor = colors[currentPoseIndex % colors.length];
+    grad.addColorStop(0, pickColor[0]);
+    grad.addColorStop(1, pickColor[1]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Center Avatar
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2 - 40, 180, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 50px "Outfit", sans-serif';
+    ctx.fillText(`POSE KE-${currentPoseIndex + 1} CAPTURED`, canvas.width / 2, canvas.height / 2 - 20);
+
+    ctx.font = '30px "Plus Jakarta Sans", sans-serif';
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillText(`${eventSettings.title} • ${new Date().toLocaleTimeString()}`, canvas.width / 2, canvas.height / 2 + 50);
+
+    const mockDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    handlePhotoCaptured(mockDataUrl);
+  };
 
   // Trigger Countdown sequence
   const startCountdownSequence = () => {
@@ -75,7 +167,9 @@ export default function CameraSessionScreen() {
     let currentSec = countdownInitial;
     sounds.playCountdownTick();
 
-    const interval = setInterval(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
       currentSec -= 1;
 
       if (currentSec > 0) {
@@ -85,82 +179,23 @@ export default function CameraSessionScreen() {
         setCountdown('SMILE!');
         sounds.playCountdownFinal();
       } else {
-        clearInterval(interval);
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
         setCountdown(null);
         triggerShutterCapture();
       }
     }, 1000);
   };
 
-  // Capture Photo
-  const triggerShutterCapture = () => {
-    // Flash Animation
-    setIsFlashing(true);
-    setTimeout(() => setIsFlashing(false), 500);
-
-    const canvas = canvasRef.current || document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    if (streamActive && videoRef.current && videoRef.current.videoWidth > 0) {
-      const vid = videoRef.current;
-      canvas.width = vid.videoWidth;
-      canvas.height = vid.videoHeight;
-
-      ctx.save();
-      if (isMirrored) {
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-      }
-      ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-      ctx.restore();
-
-      const photoDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      handlePhotoCaptured(photoDataUrl);
-    } else {
-      // Fallback synthetic photo generator if testing on PC without webcam
-      canvas.width = 1280;
-      canvas.height = 960;
-
-      // Draw stylized gradient selfie mockup
-      const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      const colors = [
-        ['#3b82f6', '#8b5cf6'],
-        ['#ec4899', '#f43f5e'],
-        ['#10b981', '#06b6d4'],
-        ['#f59e0b', '#d97706']
-      ];
-      const pickColor = colors[currentPoseIndex % colors.length];
-      grad.addColorStop(0, pickColor[0]);
-      grad.addColorStop(1, pickColor[1]);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Center Avatar
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.beginPath();
-      ctx.arc(canvas.width / 2, canvas.height / 2 - 40, 180, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center';
-      ctx.font = 'bold 50px "Outfit", sans-serif';
-      ctx.fillText(`POSE KE-${currentPoseIndex + 1} CAPTURED`, canvas.width / 2, canvas.height / 2 - 20);
-
-      ctx.font = '30px "Plus Jakarta Sans", sans-serif';
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillText(`${eventSettings.title} • ${new Date().toLocaleTimeString()}`, canvas.width / 2, canvas.height / 2 + 50);
-
-      const mockDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      handlePhotoCaptured(mockDataUrl);
-    }
-  };
-
-  // Auto trigger countdown when entering pose (optional or wait for button)
+  // Auto trigger countdown when entering pose
   useEffect(() => {
     const timer = setTimeout(() => {
       startCountdownSequence();
     }, 1200);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [currentPoseIndex]);
 
   return (
