@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { uploadToCloud } from './cloudStorage';
 
 const STORAGE_KEY = 'snapbooth_softfiles_v1';
 const EXPIRY_MS = 60 * 60 * 1000; // 1 Jam (3600 detik)
@@ -27,10 +28,10 @@ export function pruneExpiredPhotos() {
 }
 
 /**
- * Save softfile with 1 hour TTL and generate QR Code data URL
+ * Save softfile with 1 hour TTL, upload to cloud for instant phone downloads, and generate QR Code
  * @param {string} renderedDataUrl - Base64 rendered photo
  * @param {Array<string>} rawPhotos - array of captured poses
- * @returns {Promise<{ id: string, downloadUrl: string, qrDataUrl: string, expiresAt: number }>}
+ * @returns {Promise<{ id: string, downloadUrl: string, qrDataUrl: string, expiresAt: number, isCloud: boolean }>}
  */
 export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = []) {
   pruneExpiredPhotos();
@@ -39,11 +40,25 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
   const now = Date.now();
   const expiresAt = now + EXPIRY_MS;
 
+  // 1. Upload to Cloud Storage with 1-Hour TTL (so any phone on 4G/5G can download immediately)
+  let cloudUrl = null;
+  try {
+    cloudUrl = await uploadToCloud(renderedDataUrl, `SnapBooth_${id}.jpg`);
+  } catch (err) {
+    console.warn('Cloud upload failed, falling back to local URL:', err);
+  }
+
+  // 2. Construct target Download URL
+  const currentOrigin = window.location.origin;
+  const downloadUrl = cloudUrl || `${currentOrigin}/?photoId=${id}`;
+
   const photoRecord = {
     id,
     createdAt: now,
     expiresAt,
     renderedPhoto: renderedDataUrl,
+    cloudUrl,
+    downloadUrl,
     poses: rawPhotos
   };
 
@@ -54,31 +69,27 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   } catch (e) {
     console.warn('LocalStorage full, trimming older photos', e);
-    // Keep only current one if storage is close to 5MB limit
     const singleStore = { [id]: photoRecord };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(singleStore));
   }
 
-  // Construct Download URL (point to origin with ?photoId=id or softfile viewer)
-  const currentOrigin = window.location.origin;
-  const downloadUrl = `${currentOrigin}/?photoId=${id}`;
-
-  // Generate QR Code with high quality and custom dark theme colors
+  // 3. Generate QR Code pointing to the Cloud Download URL
   const qrDataUrl = await QRCode.toDataURL(downloadUrl, {
-    width: 320,
+    width: 360,
     margin: 2,
     color: {
-      dark: '#0f172a',
+      dark: '#272a33',
       light: '#ffffff'
     },
-    errorCorrectionLevel: 'H'
+    errorCorrectionLevel: 'M'
   });
 
   return {
     id,
     downloadUrl,
     qrDataUrl,
-    expiresAt
+    expiresAt,
+    isCloud: !!cloudUrl
   };
 }
 
