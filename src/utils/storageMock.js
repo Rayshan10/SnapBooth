@@ -1,5 +1,4 @@
 import QRCode from 'qrcode';
-import { uploadToCloud } from './cloudStorage';
 
 const STORAGE_KEY = 'snapbooth_softfiles_v1';
 const EXPIRY_MS = 60 * 60 * 1000; // 1 Jam (3600 detik)
@@ -28,36 +27,61 @@ export function pruneExpiredPhotos() {
 }
 
 /**
- * Save softfile with 1 hour TTL, upload to cloud for instant phone downloads, and generate QR Code
+ * Get the server's network address for mobile scanning
+ */
+async function getNetworkBaseUrl() {
+  try {
+    const res = await fetch('/api/network-ip');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ip && data.ip !== 'localhost' && data.ip !== '127.0.0.1') {
+        const port = window.location.port ? `:${window.location.port}` : '';
+        return `http://${data.ip}${port}`;
+      }
+    }
+  } catch (e) {
+    console.warn('Cannot fetch network IP, using origin:', e);
+  }
+  return window.location.origin;
+}
+
+/**
+ * Save softfile, write to disk via Vite API, and generate QR Code for instant mobile download
  * @param {string} renderedDataUrl - Base64 rendered photo
  * @param {Array<string>} rawPhotos - array of captured poses
- * @returns {Promise<{ id: string, downloadUrl: string, qrDataUrl: string, expiresAt: number, isCloud: boolean }>}
+ * @returns {Promise<{ id: string, downloadUrl: string, qrDataUrl: string, expiresAt: number }>}
  */
 export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = []) {
   pruneExpiredPhotos();
 
-  const id = 'snap_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+  const id = 'snap_' + Math.random().toString(36).substring(2, 8) + '_' + Date.now().toString(36);
   const now = Date.now();
   const expiresAt = now + EXPIRY_MS;
 
-  // 1. Upload to Cloud Storage with 1-Hour TTL (so any phone on 4G/5G can download immediately)
-  let cloudUrl = null;
+  // 1. Save Photo to server disk (public/uploads/)
   try {
-    cloudUrl = await uploadToCloud(renderedDataUrl, `SnapBooth_${id}.jpg`);
+    await fetch('/api/save-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        renderedPhoto: renderedDataUrl,
+        poses: rawPhotos
+      })
+    });
   } catch (err) {
-    console.warn('Cloud upload failed, falling back to local URL:', err);
+    console.warn('Local file saving error, continuing with client storage:', err);
   }
 
-  // 2. Construct target Download URL
-  const currentOrigin = window.location.origin;
-  const downloadUrl = cloudUrl || `${currentOrigin}/?photoId=${id}`;
+  // 2. Determine Mobile Download URL (using local network IP e.g. 192.168.x.x)
+  const baseUrl = await getNetworkBaseUrl();
+  const downloadUrl = `${baseUrl}/?guestPhoto=${id}`;
 
   const photoRecord = {
     id,
     createdAt: now,
     expiresAt,
     renderedPhoto: renderedDataUrl,
-    cloudUrl,
     downloadUrl,
     poses: rawPhotos
   };
@@ -73,9 +97,9 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     localStorage.setItem(STORAGE_KEY, JSON.stringify(singleStore));
   }
 
-  // 3. Generate QR Code pointing to the Cloud Download URL
+  // 3. Generate Clean QR Code pointing to the Branded Mobile Guest Download Page
   const qrDataUrl = await QRCode.toDataURL(downloadUrl, {
-    width: 360,
+    width: 380,
     margin: 2,
     color: {
       dark: '#272a33',
@@ -88,8 +112,7 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     id,
     downloadUrl,
     qrDataUrl,
-    expiresAt,
-    isCloud: !!cloudUrl
+    expiresAt
   };
 }
 
