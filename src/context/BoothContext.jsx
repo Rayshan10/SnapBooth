@@ -26,7 +26,7 @@ const DEFAULT_EVENT_SETTINGS = {
   enableSound: true,
   cameraDeviceId: '',
   printerName: 'DNP DS-RX1HS / Default',
-  autoResetDelaySec: 45
+  autoResetDelaySec: 90
 };
 
 export function BoothProvider({ children }) {
@@ -36,7 +36,14 @@ export function BoothProvider({ children }) {
   const [eventSettings, setEventSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('snapbooth_admin_settings');
-      return saved ? { ...DEFAULT_EVENT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_EVENT_SETTINGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.autoResetDelaySec === 45 || !parsed.autoResetDelaySec) {
+          parsed.autoResetDelaySec = 90;
+        }
+        return { ...DEFAULT_EVENT_SETTINGS, ...parsed };
+      }
+      return DEFAULT_EVENT_SETTINGS;
     } catch {
       return DEFAULT_EVENT_SETTINGS;
     }

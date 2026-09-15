@@ -26,7 +26,7 @@ export default function AdminModal() {
       ...formData,
       price: Number(formData.price) || 35000,
       countdownSec: Number(formData.countdownSec) || 3,
-      autoResetDelaySec: Number(formData.autoResetDelaySec) || 45
+      autoResetDelaySec: Number(formData.autoResetDelaySec) || 90
     });
     setIsAdminOpen(false);
   };

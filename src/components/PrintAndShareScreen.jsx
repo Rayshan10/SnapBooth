@@ -25,7 +25,19 @@ export default function PrintAndShareScreen() {
     setViewingSoftfileId
   } = useBooth();
 
-  const [autoResetSeconds, setAutoResetSeconds] = useState(eventSettings.autoResetDelaySec || 45);
+  const initialDelay = (!eventSettings.autoResetDelaySec || eventSettings.autoResetDelaySec === 45) 
+    ? 90 
+    : eventSettings.autoResetDelaySec;
+  const [autoResetSeconds, setAutoResetSeconds] = useState(initialDelay);
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    if (m > 0) {
+      return `${m}m ${s < 10 ? '0' : ''}${s}s`;
+    }
+    return `${s}s`;
+  };
 
   // Trigger celebration confetti on mount
   useEffect(() => {
@@ -121,15 +133,12 @@ export default function PrintAndShareScreen() {
 
         {/* Auto Reset Timer Badge & Page Badge */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={resetToAttract}
-            className="px-4 py-2 rounded-full bg-white text-[#272a33] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] hover:bg-[#fff9db] flex items-center gap-2 text-xs font-bold font-mono-tech transition-all cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Kembali ke Awal ({autoResetSeconds}s)</span>
-          </button>
+          <div className="px-4 py-2 rounded-full bg-white text-[#272a33] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] flex items-center gap-2 text-xs font-bold font-mono-tech whitespace-nowrap shrink-0">
+            <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="whitespace-nowrap">Sisa Waktu: {autoResetSeconds}s</span>
+          </div>
 
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#272a33] text-white shadow-md">
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#272a33] text-white shadow-md shrink-0">
             <span className="text-sm font-bold tracking-wide font-display pl-1">Page</span>
             <div className="flex items-center justify-center bg-white text-[#272a33] font-black text-xs px-2.5 py-0.5 rounded-full font-mono-tech">
               06
@@ -156,15 +165,23 @@ export default function PrintAndShareScreen() {
 
             {/* Printing Progress Overlay */}
             {isPrinting && (
-              <div className="absolute inset-0 bg-[#272a33]/90 rounded-2xl backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center z-20">
-                <Printer className="w-12 h-12 text-amber-300 animate-bounce mb-3" />
-                <h4 
-                  className="font-black text-xl text-white uppercase tracking-wider"
-                  style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
-                >
-                  Sedang Mencetak...
-                </h4>
-                <p className="text-xs text-slate-300 mt-1 font-mono-tech">
+              <div className="absolute inset-0 bg-[#272a33]/92 rounded-2xl backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center z-20">
+                <Printer className="w-9 h-9 text-amber-300 animate-bounce mb-1.5" />
+                <div className="flex flex-col items-center justify-center">
+                  <span 
+                    className="font-black text-[11px] text-amber-300 uppercase tracking-widest leading-tight"
+                    style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+                  >
+                    SEDANG
+                  </span>
+                  <span 
+                    className="font-black text-xs text-white uppercase tracking-wider mt-0.5 leading-tight"
+                    style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+                  >
+                    MENCETAK...
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-300 mt-1.5 font-mono-tech px-1 leading-tight text-center">
                   Mengirim data foto ke {eventSettings.printerName}
                 </p>
               </div>
