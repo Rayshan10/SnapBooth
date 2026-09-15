@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { startTunnel } from 'untun';
 
 function getLocalIp() {
   const nets = os.networkInterfaces();
@@ -18,6 +19,21 @@ function getLocalIp() {
 }
 
 function photoStoragePlugin() {
+  let publicTunnelUrl = null;
+
+  // Start Cloudflare Tunnel for Public 4G/5G mobile access
+  async function initCloudflareTunnel() {
+    try {
+      const tunnel = await startTunnel({ port: 5173 });
+      publicTunnelUrl = await tunnel.getURL();
+      console.log('\n🚀 [Cloudflare Tunnel Online] Live Public URL:', publicTunnelUrl);
+    } catch (e) {
+      console.warn('Could not establish Cloudflare tunnel:', e.message);
+    }
+  }
+
+  initCloudflareTunnel();
+
   return {
     name: 'photo-storage-plugin',
     configureServer(server) {
@@ -26,11 +42,15 @@ function photoStoragePlugin() {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
 
-      // Endpoint: Get Local Network IP & Server Info
+      // Endpoint: Get Local Network IP & Cloudflare Public Tunnel URL
       server.middlewares.use('/api/network-ip', (req, res) => {
         const ip = getLocalIp();
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ ip, port: 5173 }));
+        res.end(JSON.stringify({ 
+          ip, 
+          publicUrl: publicTunnelUrl,
+          port: 5173 
+        }));
       });
 
       // Endpoint: Save Photo to disk
@@ -90,7 +110,8 @@ function photoStoragePlugin() {
               success: true,
               id,
               photoUrl: `/uploads/${id}.jpg`,
-              poses: posePaths
+              poses: posePaths,
+              publicUrl: publicTunnelUrl ? `${publicTunnelUrl}/?guestPhoto=${id}` : null
             }));
           } catch (err) {
             console.error('Error saving photo API:', err);
@@ -112,6 +133,7 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
-    host: true
+    host: true,
+    allowedHosts: true
   }
 });

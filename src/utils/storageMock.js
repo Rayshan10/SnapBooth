@@ -27,29 +27,34 @@ export function pruneExpiredPhotos() {
 }
 
 /**
- * Get the server's network address for mobile scanning
+ * Get the server's public Cloudflare Tunnel URL or local network address
  */
 async function getNetworkBaseUrl() {
   try {
     const res = await fetch('/api/network-ip');
     if (res.ok) {
       const data = await res.json();
+      // 1. Prefer Cloudflare Tunnel Public HTTPS URL (accessible anywhere on 4G/5G)
+      if (data.publicUrl && data.publicUrl.startsWith('https://')) {
+        return { baseUrl: data.publicUrl, isPublicCloud: true };
+      }
+      // 2. Fallback to local Wi-Fi IP
       if (data.ip && data.ip !== 'localhost' && data.ip !== '127.0.0.1') {
         const port = window.location.port ? `:${window.location.port}` : '';
-        return `http://${data.ip}${port}`;
+        return { baseUrl: `http://${data.ip}${port}`, isPublicCloud: false };
       }
     }
   } catch (e) {
     console.warn('Cannot fetch network IP, using origin:', e);
   }
-  return window.location.origin;
+  return { baseUrl: window.location.origin, isPublicCloud: false };
 }
 
 /**
- * Save softfile, write to disk via Vite API, and generate QR Code for instant mobile download
+ * Save softfile, write to disk via Vite API, and generate QR Code with Cloudflare Public URL
  * @param {string} renderedDataUrl - Base64 rendered photo
  * @param {Array<string>} rawPhotos - array of captured poses
- * @returns {Promise<{ id: string, downloadUrl: string, qrDataUrl: string, expiresAt: number }>}
+ * @returns {Promise<{ id: string, downloadUrl: string, qrDataUrl: string, expiresAt: number, isPublicCloud: boolean }>}
  */
 export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = []) {
   pruneExpiredPhotos();
@@ -73,8 +78,8 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     console.warn('Local file saving error, continuing with client storage:', err);
   }
 
-  // 2. Determine Mobile Download URL (using local network IP e.g. 192.168.x.x)
-  const baseUrl = await getNetworkBaseUrl();
+  // 2. Determine Mobile Download URL (Cloudflare Public URL or Local IP)
+  const { baseUrl, isPublicCloud } = await getNetworkBaseUrl();
   const downloadUrl = `${baseUrl}/?guestPhoto=${id}`;
 
   const photoRecord = {
@@ -83,6 +88,7 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     expiresAt,
     renderedPhoto: renderedDataUrl,
     downloadUrl,
+    isPublicCloud,
     poses: rawPhotos
   };
 
@@ -97,7 +103,7 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     localStorage.setItem(STORAGE_KEY, JSON.stringify(singleStore));
   }
 
-  // 3. Generate Clean QR Code pointing to the Branded Mobile Guest Download Page
+  // 3. Generate Clean QR Code pointing to the Public Cloud URL
   const qrDataUrl = await QRCode.toDataURL(downloadUrl, {
     width: 380,
     margin: 2,
@@ -112,7 +118,8 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     id,
     downloadUrl,
     qrDataUrl,
-    expiresAt
+    expiresAt,
+    isPublicCloud
   };
 }
 

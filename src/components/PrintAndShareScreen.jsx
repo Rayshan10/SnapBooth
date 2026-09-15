@@ -204,8 +204,12 @@ export default function PrintAndShareScreen() {
         {/* Right Column: QR Code Softfile Download */}
         <div className="flex flex-col items-center text-center p-5 rounded-3xl bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33]">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#e4ecfc] text-[#272a33] border border-[#272a33] text-xs font-bold font-mono-tech mb-2">
-            <QrCode className="w-3.5 h-3.5" />
-            <span>UNDUH SOFTFILE INSTAN</span>
+            <QrCode className="w-3.5 h-3.5 text-blue-600" />
+            <span>
+              {softfileInfo?.isPublicCloud 
+                ? '🌐 ONLINE 4G/5G AKTIF' 
+                : 'UNDUH SOFTFILE INSTAN'}
+            </span>
           </div>
 
           <h3 
