@@ -1,5 +1,21 @@
 import { applyCanvasFilter } from './filterEngine';
 
+export function getSupportedVideoMimeType() {
+  const types = [
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp8',
+    'video/webm'
+  ];
+  for (const t of types) {
+    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t)) {
+      return t;
+    }
+  }
+  return 'video/webm';
+}
+
 /**
  * Render Live Motion Video Strip from video clips in the selected frame layout
  * @param {Array<Blob|string>} videoClips - array of video blobs or video URLs for each pose
@@ -7,7 +23,7 @@ import { applyCanvasFilter } from './filterEngine';
  * @param {string} filterId - filter preset id
  * @param {Object} eventSettings - title, subtitle, date, etc.
  * @param {number} durationMs - total video duration (default 3500ms)
- * @returns {Promise<Blob>} Video Blob (video/webm or video/mp4)
+ * @returns {Promise<Blob>} Video Blob (video/mp4 or video/webm)
  */
 export async function renderMotionVideoStrip(
   videoClips,
@@ -32,30 +48,38 @@ export async function renderMotionVideoStrip(
       const videoElements = await Promise.all(
         videoClips.map((clip) => {
           return new Promise((res) => {
+            if (!clip) return res(null);
             const vid = document.createElement('video');
             vid.crossOrigin = 'anonymous';
             vid.muted = true;
             vid.loop = true;
             vid.playsInline = true;
+            vid.autoplay = true;
             vid.src = typeof clip === 'string' ? clip : URL.createObjectURL(clip);
             vid.onloadeddata = () => {
               vid.play().catch(() => {});
               res(vid);
             };
             vid.onerror = () => res(null);
-            setTimeout(() => res(vid), 1000); // safety timeout
+            setTimeout(() => res(vid), 1200); // safety timeout
           });
         })
       );
 
       // Setup Canvas Stream Recorder
       const stream = canvas.captureStream(30); // 30 FPS
-      let mimeType = 'video/webm;codecs=vp9';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4';
+      const mimeType = getSupportedVideoMimeType();
+
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, { 
+          mimeType, 
+          videoBitsPerSecond: 3000000 
+        });
+      } catch (recErr) {
+        recorder = new MediaRecorder(stream);
       }
 
-      const recorder = new MediaRecorder(stream, { mimeType });
       const chunks = [];
 
       recorder.ondataavailable = (e) => {
@@ -65,7 +89,7 @@ export async function renderMotionVideoStrip(
       };
 
       recorder.onstop = () => {
-        const finalBlob = new Blob(chunks, { type: mimeType });
+        const finalBlob = new Blob(chunks, { type: recorder.mimeType || mimeType });
         // Clean up video elements
         videoElements.forEach((vid) => {
           if (vid && vid.src && vid.src.startsWith('blob:')) {
@@ -75,9 +99,10 @@ export async function renderMotionVideoStrip(
         resolve(finalBlob);
       };
 
-      recorder.start();
+      recorder.start(100);
 
       const startTime = performance.now();
+      let animId;
 
       function drawFrame(currentTime) {
         const elapsed = currentTime - startTime;

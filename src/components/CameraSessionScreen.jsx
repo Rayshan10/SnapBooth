@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useBooth } from '../context/BoothContext';
 import { sounds } from '../utils/audio';
+import { getSupportedVideoMimeType } from '../utils/motionCompositor';
 import { Camera, RefreshCw, Sparkles, Smile, VideoOff, FlipHorizontal } from 'lucide-react';
 
 export default function CameraSessionScreen() {
@@ -100,11 +101,15 @@ export default function CameraSessionScreen() {
       if (!activeStreamRef.current) return;
       videoChunksRef.current = [];
       const stream = activeStreamRef.current;
-      let mimeType = 'video/webm;codecs=vp8';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4';
+      const mimeType = getSupportedVideoMimeType();
+      
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
+      } catch (e) {
+        recorder = new MediaRecorder(stream);
       }
-      const recorder = new MediaRecorder(stream, { mimeType });
+
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           videoChunksRef.current.push(e.data);
@@ -123,7 +128,8 @@ export default function CameraSessionScreen() {
       try {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.onstop = () => {
-            const blob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+            const type = mediaRecorderRef.current?.mimeType || 'video/mp4';
+            const blob = new Blob(videoChunksRef.current, { type });
             resolve(blob);
           };
           mediaRecorderRef.current.stop();

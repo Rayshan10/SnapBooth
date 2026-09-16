@@ -18,6 +18,12 @@ function getLocalIp() {
   return 'localhost';
 }
 
+function cleanBase64(dataUrl) {
+  if (!dataUrl) return null;
+  const idx = dataUrl.indexOf(',');
+  return idx !== -1 ? dataUrl.substring(idx + 1) : dataUrl;
+}
+
 function photoStoragePlugin() {
   let publicTunnelUrl = null;
 
@@ -74,7 +80,7 @@ function photoStoragePlugin() {
             }
 
             // 1. Save Rendered Strip
-            const base64Data = renderedPhoto.replace(/^data:image\/\w+;base64,/, '');
+            const base64Data = cleanBase64(renderedPhoto);
             const buffer = Buffer.from(base64Data, 'base64');
             const filePath = path.join(uploadDir, `${id}.jpg`);
             fs.writeFileSync(filePath, buffer);
@@ -84,7 +90,7 @@ function photoStoragePlugin() {
             poses.forEach((poseBase64, idx) => {
               try {
                 if (poseBase64) {
-                  const pData = poseBase64.replace(/^data:image\/\w+;base64,/, '');
+                  const pData = cleanBase64(poseBase64);
                   const pBuffer = Buffer.from(pData, 'base64');
                   const pPath = path.join(uploadDir, `${id}_pose_${idx + 1}.jpg`);
                   fs.writeFileSync(pPath, pBuffer);
@@ -99,7 +105,7 @@ function photoStoragePlugin() {
             let gifPath = null;
             if (gifData) {
               try {
-                const gData = gifData.replace(/^data:image\/\w+;base64,/, '');
+                const gData = cleanBase64(gifData);
                 const gBuffer = Buffer.from(gData, 'base64');
                 const gFilePath = path.join(uploadDir, `${id}_boomerang.gif`);
                 fs.writeFileSync(gFilePath, gBuffer);
@@ -113,11 +119,15 @@ function photoStoragePlugin() {
             let motionPath = null;
             if (motionVideo) {
               try {
-                const vData = motionVideo.replace(/^data:video\/\w+;base64,/, '');
+                const isMp4 = motionVideo.startsWith('data:video/mp4');
+                const vData = cleanBase64(motionVideo);
                 const vBuffer = Buffer.from(vData, 'base64');
-                const vFilePath = path.join(uploadDir, `${id}_motion.webm`);
-                fs.writeFileSync(vFilePath, vBuffer);
-                motionPath = `/uploads/${id}_motion.webm`;
+                
+                // Write both .mp4 and .webm for maximum compatibility across Windows & Mobile
+                fs.writeFileSync(path.join(uploadDir, `${id}_motion.mp4`), vBuffer);
+                fs.writeFileSync(path.join(uploadDir, `${id}_motion.webm`), vBuffer);
+                
+                motionPath = isMp4 ? `/uploads/${id}_motion.mp4` : `/uploads/${id}_motion.mp4`;
               } catch (e) {
                 console.error('Error saving motion video file:', e);
               }
@@ -127,7 +137,7 @@ function photoStoragePlugin() {
             let zipPath = null;
             if (zipData) {
               try {
-                const zData = zipData.replace(/^data:application\/\w+;base64,/, '').replace(/^data:application\/x-zip-compressed;base64,/, '');
+                const zData = cleanBase64(zipData);
                 const zBuffer = Buffer.from(zData, 'base64');
                 const zFilePath = path.join(uploadDir, `${id}_bundle.zip`);
                 fs.writeFileSync(zFilePath, zBuffer);

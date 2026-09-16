@@ -24,7 +24,8 @@ export default function GuestDownloadScreen({ photoId }) {
   const [poses, setPoses] = useState([]);
 
   const stripUrl = `/uploads/${photoId}.jpg`;
-  const videoUrl = `/uploads/${photoId}_motion.webm`;
+  const videoMp4Url = `/uploads/${photoId}_motion.mp4`;
+  const videoWebmUrl = `/uploads/${photoId}_motion.webm`;
   const gifUrl = `/uploads/${photoId}_boomerang.gif`;
   const zipUrl = `/uploads/${photoId}_bundle.zip`;
 
@@ -74,9 +75,9 @@ export default function GuestDownloadScreen({ photoId }) {
     triggerDownload(stripUrl, `SnapBooth_PhotoStrip_${photoId}.jpg`, 'Foto Strip HD');
   };
 
-  // Download Live Motion Video
+  // Download Live Motion Video (MP4)
   const handleDownloadVideo = () => {
-    triggerDownload(videoUrl, `SnapBooth_LiveMotion_${photoId}.webm`, 'Live Motion Video');
+    triggerDownload(videoMp4Url, `SnapBooth_LiveMotion_${photoId}.mp4`, 'Live Motion Video (MP4)');
   };
 
   // Download GIF Boomerang
@@ -237,15 +238,19 @@ export default function GuestDownloadScreen({ photoId }) {
             <div className="w-full flex flex-col items-center">
               <div className="relative max-h-[46vh] w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-[#272a33] shadow-md bg-black flex items-center justify-center">
                 <video 
-                  src={videoUrl} 
                   autoPlay 
                   loop 
                   muted 
                   playsInline 
                   controls
+                  preload="auto"
                   className="max-h-[43vh] w-full object-contain rounded-xl"
                   onError={() => setHasVideo(false)}
-                />
+                >
+                  <source src={videoMp4Url} type="video/mp4" />
+                  <source src={videoWebmUrl} type="video/webm" />
+                  Browser kamu tidak mendukung pemutaran video langsung.
+                </video>
               </div>
 
               <button
@@ -254,7 +259,7 @@ export default function GuestDownloadScreen({ photoId }) {
                 className="w-full mt-4 py-3.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[3px_3px_0px_#ec4899] font-display font-black text-sm tracking-wide flex items-center justify-center gap-2 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <ArrowDownToLine className="w-4 h-4 text-rose-300 stroke-[3]" />
-                <span>Unduh Live Motion Video (WebM/MP4)</span>
+                <span>Unduh Live Motion Video (.MP4)</span>
               </button>
             </div>
           )}
