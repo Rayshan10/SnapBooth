@@ -32,11 +32,11 @@ function photoStoragePlugin() {
     }
   }
 
-  initCloudflareTunnel();
-
   return {
     name: 'photo-storage-plugin',
     configureServer(server) {
+      initCloudflareTunnel();
+
       const uploadDir = path.resolve(__dirname, 'public', 'uploads');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -53,7 +53,7 @@ function photoStoragePlugin() {
         }));
       });
 
-      // Endpoint: Save Photo to disk
+      // Endpoint: Save Softfile Bundle (Photos, GIF, Video, ZIP) to disk
       server.middlewares.use('/api/save-photo', (req, res, next) => {
         if (req.method !== 'POST') return next();
 
@@ -65,7 +65,7 @@ function photoStoragePlugin() {
         req.on('end', () => {
           try {
             const data = JSON.parse(body);
-            const { id, renderedPhoto, poses = [] } = data;
+            const { id, renderedPhoto, poses = [], gifData, motionVideo, zipData } = data;
 
             if (!id || !renderedPhoto) {
               res.statusCode = 400;
@@ -73,25 +73,69 @@ function photoStoragePlugin() {
               return;
             }
 
-            // Save Rendered Strip
+            // 1. Save Rendered Strip
             const base64Data = renderedPhoto.replace(/^data:image\/\w+;base64,/, '');
             const buffer = Buffer.from(base64Data, 'base64');
             const filePath = path.join(uploadDir, `${id}.jpg`);
             fs.writeFileSync(filePath, buffer);
 
-            // Save Poses if available
+            // 2. Save Poses if available
             const posePaths = [];
             poses.forEach((poseBase64, idx) => {
               try {
-                const pData = poseBase64.replace(/^data:image\/\w+;base64,/, '');
-                const pBuffer = Buffer.from(pData, 'base64');
-                const pPath = path.join(uploadDir, `${id}_pose_${idx + 1}.jpg`);
-                fs.writeFileSync(pPath, pBuffer);
-                posePaths.push(`/uploads/${id}_pose_${idx + 1}.jpg`);
+                if (poseBase64) {
+                  const pData = poseBase64.replace(/^data:image\/\w+;base64,/, '');
+                  const pBuffer = Buffer.from(pData, 'base64');
+                  const pPath = path.join(uploadDir, `${id}_pose_${idx + 1}.jpg`);
+                  fs.writeFileSync(pPath, pBuffer);
+                  posePaths.push(`/uploads/${id}_pose_${idx + 1}.jpg`);
+                }
               } catch (e) {
                 console.error('Error saving pose file:', e);
               }
             });
+
+            // 3. Save Boomerang GIF if available
+            let gifPath = null;
+            if (gifData) {
+              try {
+                const gData = gifData.replace(/^data:image\/\w+;base64,/, '');
+                const gBuffer = Buffer.from(gData, 'base64');
+                const gFilePath = path.join(uploadDir, `${id}_boomerang.gif`);
+                fs.writeFileSync(gFilePath, gBuffer);
+                gifPath = `/uploads/${id}_boomerang.gif`;
+              } catch (e) {
+                console.error('Error saving GIF file:', e);
+              }
+            }
+
+            // 4. Save Live Motion Video if available
+            let motionPath = null;
+            if (motionVideo) {
+              try {
+                const vData = motionVideo.replace(/^data:video\/\w+;base64,/, '');
+                const vBuffer = Buffer.from(vData, 'base64');
+                const vFilePath = path.join(uploadDir, `${id}_motion.webm`);
+                fs.writeFileSync(vFilePath, vBuffer);
+                motionPath = `/uploads/${id}_motion.webm`;
+              } catch (e) {
+                console.error('Error saving motion video file:', e);
+              }
+            }
+
+            // 5. Save ZIP Bundle if available
+            let zipPath = null;
+            if (zipData) {
+              try {
+                const zData = zipData.replace(/^data:application\/\w+;base64,/, '').replace(/^data:application\/x-zip-compressed;base64,/, '');
+                const zBuffer = Buffer.from(zData, 'base64');
+                const zFilePath = path.join(uploadDir, `${id}_bundle.zip`);
+                fs.writeFileSync(zFilePath, zBuffer);
+                zipPath = `/uploads/${id}_bundle.zip`;
+              } catch (e) {
+                console.error('Error saving ZIP bundle file:', e);
+              }
+            }
 
             // Clean up uploads older than 1 hour (3600s)
             const now = Date.now();
@@ -111,6 +155,9 @@ function photoStoragePlugin() {
               id,
               photoUrl: `/uploads/${id}.jpg`,
               poses: posePaths,
+              gifUrl: gifPath,
+              motionUrl: motionPath,
+              zipUrl: zipPath,
               publicUrl: publicTunnelUrl ? `${publicTunnelUrl}/?guestPhoto=${id}` : null
             }));
           } catch (err) {

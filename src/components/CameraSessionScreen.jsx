@@ -15,6 +15,8 @@ export default function CameraSessionScreen() {
   const canvasRef = useRef(null);
   const activeStreamRef = useRef(null);
   const intervalRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const videoChunksRef = useRef([]);
 
   const [streamActive, setStreamActive] = useState(false);
   const [countdown, setCountdown] = useState(null); // null or 3, 2, 1
@@ -48,7 +50,6 @@ export default function CameraSessionScreen() {
         try {
           stream = await navigator.mediaDevices.getUserMedia(constraints);
         } catch (e1) {
-          // Fallback to basic video constraint
           stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         }
 
@@ -93,11 +94,56 @@ export default function CameraSessionScreen() {
     };
   }, [eventSettings.cameraDeviceId]);
 
+  // Start short video clip recording during countdown
+  const startPoseVideoRecording = () => {
+    try {
+      if (!activeStreamRef.current) return;
+      videoChunksRef.current = [];
+      const stream = activeStreamRef.current;
+      let mimeType = 'video/webm;codecs=vp8';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4';
+      }
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          videoChunksRef.current.push(e.data);
+        }
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start(100);
+    } catch (e) {
+      console.warn('Could not start MediaRecorder:', e);
+    }
+  };
+
+  // Stop video recording and get blob
+  const stopPoseVideoRecording = () => {
+    return new Promise((resolve) => {
+      try {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.onstop = () => {
+            const blob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+            resolve(blob);
+          };
+          mediaRecorderRef.current.stop();
+        } else {
+          resolve(null);
+        }
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  };
+
   // Capture Photo Function
-  const triggerShutterCapture = () => {
+  const triggerShutterCapture = async () => {
     // Flash Animation
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 500);
+
+    // Stop and get live video clip
+    const videoBlob = await stopPoseVideoRecording();
 
     const canvas = canvasRef.current || document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -117,7 +163,7 @@ export default function CameraSessionScreen() {
       ctx.restore();
 
       const photoDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      handlePhotoCaptured(photoDataUrl);
+      handlePhotoCaptured(photoDataUrl, videoBlob);
       return;
     }
 
@@ -138,7 +184,6 @@ export default function CameraSessionScreen() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Center Avatar
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.beginPath();
     ctx.arc(canvas.width / 2, canvas.height / 2 - 40, 180, 0, Math.PI * 2);
@@ -154,7 +199,7 @@ export default function CameraSessionScreen() {
     ctx.fillText(`${eventSettings.title} • ${new Date().toLocaleTimeString()}`, canvas.width / 2, canvas.height / 2 + 50);
 
     const mockDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    handlePhotoCaptured(mockDataUrl);
+    handlePhotoCaptured(mockDataUrl, videoBlob);
   };
 
   // Trigger Countdown sequence
@@ -163,6 +208,9 @@ export default function CameraSessionScreen() {
 
     sounds.init();
     setCountdown(countdownInitial);
+
+    // Start video clip recording during countdown
+    startPoseVideoRecording();
 
     let currentSec = countdownInitial;
     sounds.playCountdownTick();
@@ -209,7 +257,6 @@ export default function CameraSessionScreen() {
       )}
 
       {/* ================= BACKGROUND STICKER ORNAMENTS ================= */}
-      {/* 1. Sparkle Star Kuning (Kiri Atas) */}
       <div className="absolute top-8 left-6 sm:left-10 z-0 pointer-events-none animate-float opacity-80">
         <svg className="w-9 h-9 sm:w-11 sm:h-11 overflow-visible" viewBox="0 0 100 100" fill="none">
           <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#1e2336" transform="translate(4, 5)" />
@@ -217,7 +264,6 @@ export default function CameraSessionScreen() {
         </svg>
       </div>
 
-      {/* 2. Daisy Smiley Flower (Kanan Atas) */}
       <div className="absolute top-8 right-6 sm:right-10 z-0 pointer-events-none animate-float-reverse opacity-80">
         <svg className="w-10 h-10 sm:w-12 sm:h-12 overflow-visible" viewBox="0 0 100 100" fill="none">
           <circle cx="54" cy="54" r="38" fill="#1e2336" />
@@ -229,7 +275,6 @@ export default function CameraSessionScreen() {
         </svg>
       </div>
 
-      {/* 3. 3D Heart Sticker (Kiri Bawah) */}
       <div className="absolute bottom-16 left-6 sm:left-10 z-0 pointer-events-none animate-float-reverse opacity-80">
         <svg className="w-10 h-10 sm:w-12 sm:h-12 overflow-visible" viewBox="0 0 100 100" fill="none">
           <path d="M 50 30 C 50 10 25 10 15 25 C 0 45 35 70 50 88 C 65 70 100 45 85 25 C 75 10 50 10 50 30 Z" fill="#1e2336" transform="translate(4, 5) rotate(-12 50 50)" />
@@ -237,7 +282,6 @@ export default function CameraSessionScreen() {
         </svg>
       </div>
 
-      {/* 4. 3D Lightning Bolt (Kanan Bawah) */}
       <div className="absolute bottom-16 right-8 sm:right-12 z-0 pointer-events-none animate-float opacity-80">
         <svg className="w-9 h-11 sm:w-11 sm:h-14 overflow-visible" viewBox="0 0 100 120" fill="none">
           <path d="M 55 5 L 15 65 L 48 65 L 35 115 L 85 45 L 50 45 Z" fill="#1e2336" transform="translate(4, 4) rotate(8 50 60)" />
@@ -311,7 +355,7 @@ export default function CameraSessionScreen() {
           </div>
         )}
 
-        {/* Viewfinder Overlay Guides (Retro Crop Framing) */}
+        {/* Viewfinder Overlay Guides */}
         <div className="absolute inset-6 sm:inset-8 border border-white/30 rounded-2xl pointer-events-none flex flex-col justify-between p-4 z-20">
           <div className="flex justify-between">
             <div className="w-7 h-7 border-t-4 border-l-4 border-amber-300 rounded-tl-lg shadow-sm" />

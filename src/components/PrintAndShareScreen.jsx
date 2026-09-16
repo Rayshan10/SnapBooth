@@ -219,7 +219,7 @@ export default function PrintAndShareScreen() {
             Scan QR Code dengan Kamera HP
           </h3>
           <p className="text-slate-600 text-xs mb-3 font-medium max-w-sm">
-            Buka kamera smartphone kamu dan arahkan ke kode QR di bawah untuk mengunduh softfile foto HD.
+            Scan untuk mengunduh <strong>Paket Lengkap Softfile</strong>: Foto Strip HD, Live Video, GIF Boomerang, & Pose Satuan.
           </p>
 
           {/* QR Code Frame */}
@@ -246,10 +246,16 @@ export default function PrintAndShareScreen() {
           {/* Simulated Direct Preview Link */}
           {softfileInfo?.id && (
             <button
-              onClick={() => setViewingSoftfileId(softfileInfo.id)}
+              onClick={() => {
+                if (softfileInfo.downloadUrl) {
+                  window.open(softfileInfo.downloadUrl, '_blank');
+                } else {
+                  setViewingSoftfileId(softfileInfo.id);
+                }
+              }}
               className="mt-3 text-xs text-[#272a33] hover:text-blue-600 underline font-bold flex items-center gap-1 font-mono-tech cursor-pointer transition-colors"
             >
-              <span>Uji tampilan unduhan tamu (Preview Softfile Page)</span>
+              <span>Uji tampilan unduhan tamu (Buka Halaman Tamu)</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
           )}

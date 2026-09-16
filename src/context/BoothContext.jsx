@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { FRAME_TEMPLATES, renderHighResPhotoStrip } from '../utils/canvasRenderer';
 import { FILTERS } from '../utils/filterEngine';
 import { saveSoftfileAndGenerateQR, pruneExpiredPhotos } from '../utils/storageMock';
+import { generateGifFromPhotos } from '../utils/gifGenerator';
+import { renderMotionVideoStrip } from '../utils/motionCompositor';
+import { createSoftfileZip } from '../utils/zipPackager';
 import { sounds } from '../utils/audio';
 
 const BoothContext = createContext(null);
@@ -52,6 +55,7 @@ export function BoothProvider({ children }) {
   const [selectedFrame, setSelectedFrame] = useState(FRAME_TEMPLATES[0]);
   const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
   const [capturedPhotos, setCapturedPhotos] = useState([]);
+  const [capturedVideos, setCapturedVideos] = useState([]);
   const [retakeCounts, setRetakeCounts] = useState({}); // { 0: 0, 1: 0, ... }
   const [activeFilter, setActiveFilter] = useState('normal');
   const [finalRenderedPhoto, setFinalRenderedPhoto] = useState(null);
@@ -83,6 +87,7 @@ export function BoothProvider({ children }) {
     sounds.playButtonClick();
     setCurrentPoseIndex(0);
     setCapturedPhotos([]);
+    setCapturedVideos([]);
     setRetakeCounts({});
     setActiveFilter('normal');
     setFinalRenderedPhoto(null);
@@ -103,16 +108,24 @@ export function BoothProvider({ children }) {
     setSelectedFrame(template);
     setCurrentPoseIndex(0);
     setCapturedPhotos([]);
+    setCapturedVideos([]);
     setRetakeCounts({});
     setStep(STEPS.CAMERA);
   };
 
   // When a pose photo is captured
-  const handlePhotoCaptured = (photoDataUrl) => {
+  const handlePhotoCaptured = (photoDataUrl, videoBlob) => {
     sounds.playShutter();
     const newPhotos = [...capturedPhotos];
     newPhotos[currentPoseIndex] = photoDataUrl;
     setCapturedPhotos(newPhotos);
+
+    if (videoBlob) {
+      const newVideos = [...capturedVideos];
+      newVideos[currentPoseIndex] = videoBlob;
+      setCapturedVideos(newVideos);
+    }
+
     setStep(STEPS.REVIEW_RETAKE);
   };
 
@@ -144,13 +157,13 @@ export function BoothProvider({ children }) {
     }
   };
 
-  // Finish filter selection and render high-res composite
+  // Finish filter selection and render high-res composite & full asset package
   const handleFinishFilters = async (filterId) => {
     sounds.playButtonClick();
     setActiveFilter(filterId);
 
-    // Render composite
     try {
+      // 1. Render Composite Photo Strip
       const rendered = await renderHighResPhotoStrip(
         capturedPhotos,
         selectedFrame,
@@ -159,13 +172,57 @@ export function BoothProvider({ children }) {
       );
       setFinalRenderedPhoto(rendered);
 
-      // Save softfile & generate QR
-      const softfileData = await saveSoftfileAndGenerateQR(rendered, capturedPhotos);
+      // 2. Generate Boomerang GIF from captured photos
+      let gifDataUrl = null;
+      try {
+        gifDataUrl = await generateGifFromPhotos(capturedPhotos, 480, 640, 0.4);
+      } catch (e) {
+        console.warn('Boomerang GIF generation error:', e);
+      }
+
+      // 3. Render Live Motion Video Strip if video clips exist
+      let motionVideoBlob = null;
+      try {
+        if (capturedVideos && capturedVideos.length > 0) {
+          motionVideoBlob = await renderMotionVideoStrip(
+            capturedVideos,
+            selectedFrame,
+            filterId,
+            eventSettings
+          );
+        }
+      } catch (e) {
+        console.warn('Motion video generation error:', e);
+      }
+
+      // 4. Create 1-Click ZIP Package containing all assets
+      let zipBlob = null;
+      try {
+        const sessionId = Math.random().toString(36).substring(2, 7);
+        zipBlob = await createSoftfileZip({
+          photoStripDataUrl: rendered,
+          posesDataUrls: capturedPhotos,
+          gifDataUrl,
+          motionVideoBlob,
+          sessionId
+        });
+      } catch (e) {
+        console.warn('ZIP packaging error:', e);
+      }
+
+      // 5. Save softfile bundle & generate clean QR
+      const softfileData = await saveSoftfileAndGenerateQR({
+        renderedDataUrl: rendered,
+        rawPhotos: capturedPhotos,
+        gifDataUrl,
+        motionVideoBlob,
+        zipBlob
+      });
       setSoftfileInfo(softfileData);
 
       setStep(STEPS.PRINT_SHARE);
     } catch (err) {
-      console.error('Error rendering photo strip:', err);
+      console.error('Error rendering photo package:', err);
     }
   };
 
@@ -186,6 +243,7 @@ export function BoothProvider({ children }) {
     setStep(STEPS.ATTRACT);
     setCurrentPoseIndex(0);
     setCapturedPhotos([]);
+    setCapturedVideos([]);
     setRetakeCounts({});
     setFinalRenderedPhoto(null);
     setSoftfileInfo(null);

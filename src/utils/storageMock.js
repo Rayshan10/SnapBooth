@@ -50,20 +50,46 @@ async function getNetworkBaseUrl() {
   return { baseUrl: window.location.origin, isPublicCloud: false };
 }
 
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    if (!blob) return resolve(null);
+    if (typeof blob === 'string') return resolve(blob);
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(blob);
+  });
+}
+
 /**
  * Save softfile, write to disk via Vite API, and generate QR Code with Cloudflare Public URL
- * @param {string} renderedDataUrl - Base64 rendered photo
- * @param {Array<string>} rawPhotos - array of captured poses
- * @returns {Promise<{ id: string, downloadUrl: string, qrDataUrl: string, expiresAt: number, isPublicCloud: boolean }>}
+ * Supports object param { renderedDataUrl, rawPhotos, gifDataUrl, motionVideoBlob, zipBlob } or positional params
  */
-export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = []) {
+export async function saveSoftfileAndGenerateQR(paramsOrRendered, rawPhotos = []) {
   pruneExpiredPhotos();
+
+  let renderedDataUrl, poses, gifDataUrl, motionVideoBlob, zipBlob;
+
+  if (typeof paramsOrRendered === 'object' && paramsOrRendered.renderedDataUrl) {
+    renderedDataUrl = paramsOrRendered.renderedDataUrl;
+    poses = paramsOrRendered.rawPhotos || [];
+    gifDataUrl = paramsOrRendered.gifDataUrl || null;
+    motionVideoBlob = paramsOrRendered.motionVideoBlob || null;
+    zipBlob = paramsOrRendered.zipBlob || null;
+  } else {
+    renderedDataUrl = paramsOrRendered;
+    poses = rawPhotos;
+  }
 
   const id = 'snap_' + Math.random().toString(36).substring(2, 8) + '_' + Date.now().toString(36);
   const now = Date.now();
   const expiresAt = now + EXPIRY_MS;
 
-  // 1. Save Photo to server disk (public/uploads/)
+  // Convert blobs to base64 for API upload
+  const motionVideoBase64 = motionVideoBlob ? await blobToBase64(motionVideoBlob) : null;
+  const zipBase64 = zipBlob ? await blobToBase64(zipBlob) : null;
+
+  // 1. Save Photo Bundle to server disk (public/uploads/)
   try {
     await fetch('/api/save-photo', {
       method: 'POST',
@@ -71,7 +97,10 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
       body: JSON.stringify({
         id,
         renderedPhoto: renderedDataUrl,
-        poses: rawPhotos
+        poses,
+        gifData: gifDataUrl,
+        motionVideo: motionVideoBase64,
+        zipData: zipBase64
       })
     });
   } catch (err) {
@@ -89,7 +118,10 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     renderedPhoto: renderedDataUrl,
     downloadUrl,
     isPublicCloud,
-    poses: rawPhotos
+    poses,
+    gifUrl: gifDataUrl,
+    hasMotion: !!motionVideoBase64,
+    hasZip: !!zipBase64
   };
 
   try {
@@ -119,7 +151,12 @@ export async function saveSoftfileAndGenerateQR(renderedDataUrl, rawPhotos = [])
     downloadUrl,
     qrDataUrl,
     expiresAt,
-    isPublicCloud
+    isPublicCloud,
+    photoUrl: `/uploads/${id}.jpg`,
+    gifUrl: `/uploads/${id}_boomerang.gif`,
+    motionUrl: `/uploads/${id}_motion.webm`,
+    zipUrl: `/uploads/${id}_bundle.zip`,
+    zipBlob
   };
 }
 
