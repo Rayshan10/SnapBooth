@@ -22,7 +22,11 @@ export default function App() {
 
   // If mobile guest view
   if (guestPhotoId) {
-    return <GuestDownloadScreen photoId={guestPhotoId} />;
+    return (
+      <div className="w-full min-h-screen bg-[#f3edd9] overflow-y-auto overflow-x-hidden">
+        <GuestDownloadScreen photoId={guestPhotoId} />
+      </div>
+    );
   }
 
   return (

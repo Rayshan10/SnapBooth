@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Download, 
-  Clock, 
-  Sparkles, 
-  CheckCircle2, 
-  Film, 
-  Image as ImageIcon, 
-  Video, 
-  FileArchive, 
-  ArrowDownToLine, 
-  Share2, 
-  Layers, 
+import {
+  Download,
+  Clock,
+  Sparkles,
+  CheckCircle2,
+  Film,
+  Image as ImageIcon,
+  Video,
+  FileArchive,
+  ArrowDownToLine,
+  Share2,
+  Layers,
   Eye,
   Check
 } from 'lucide-react';
@@ -30,9 +30,34 @@ export default function GuestDownloadScreen({ photoId }) {
   const zipUrl = `/uploads/${photoId}_bundle.zip`;
 
   useEffect(() => {
-    // Check available pose files (up to 4)
-    const list = [1, 2, 3, 4].map(idx => `/uploads/${photoId}_pose_${idx}.jpg`);
-    setPoses(list);
+    let isMounted = true;
+
+    async function detectAvailablePoses() {
+      const valid = [];
+      for (let i = 1; i <= 6; i++) {
+        const url = `/uploads/${photoId}_pose_${i}.jpg`;
+        const exists = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url;
+        });
+
+        if (exists) {
+          valid.push(url);
+        } else {
+          // If a pose index doesn't exist, stop scanning
+          if (i >= 3) break;
+        }
+      }
+
+      if (isMounted) {
+        setPoses(valid.length > 0 ? valid : [1, 2, 3].map(idx => `/uploads/${photoId}_pose_${idx}.jpg`));
+      }
+    }
+
+    detectAvailablePoses();
+    return () => { isMounted = false; };
   }, [photoId]);
 
   // Generic direct file download trigger
@@ -91,8 +116,8 @@ export default function GuestDownloadScreen({ photoId }) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#f3edd9] bg-grid-notebook text-slate-900 p-4 sm:p-6 flex flex-col items-center justify-between selection:bg-amber-200">
-      
+    <div className="w-full min-h-screen bg-[#f3edd9] bg-grid-notebook text-slate-900 px-4 py-6 pb-32 sm:pb-40 flex flex-col items-center justify-start selection:bg-amber-200">
+
       {/* Decorative Stickers */}
       <div className="absolute top-4 left-4 z-0 pointer-events-none opacity-80">
         <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none">
@@ -110,14 +135,14 @@ export default function GuestDownloadScreen({ photoId }) {
       <header className="w-full max-w-md text-center pt-2 pb-3 z-10">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#272a33] text-white text-xs font-mono-tech font-bold mb-2 shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-          <span>SNAPBOOTH PHOTOBOOTH</span>
+          <span>SNAPBOOTH</span>
         </div>
-        
-        <h1 
+
+        <h1
           className="text-2xl sm:text-3xl font-black text-[#343a59] leading-tight uppercase tracking-tight"
           style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
         >
-          PAKET LENGKAP SOFTFILE
+          UNDUH SOFTFILE MU!
         </h1>
         <p className="text-slate-600 text-xs mt-1 font-medium">
           Unduh Foto Strip, Video Gerak, GIF Boomerang, & Pose Satuan
@@ -152,11 +177,10 @@ export default function GuestDownloadScreen({ photoId }) {
         <div className="w-full grid grid-cols-4 gap-1.5 p-1.5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] mb-3">
           <button
             onClick={() => setActiveTab('strip')}
-            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${
-              activeTab === 'strip'
-                ? 'bg-[#272a33] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
+            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${activeTab === 'strip'
+              ? 'bg-[#272a33] text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+              }`}
           >
             <ImageIcon className="w-4 h-4" />
             <span className="text-[10px]">Foto Strip</span>
@@ -164,11 +188,10 @@ export default function GuestDownloadScreen({ photoId }) {
 
           <button
             onClick={() => setActiveTab('video')}
-            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${
-              activeTab === 'video'
-                ? 'bg-[#272a33] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
+            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${activeTab === 'video'
+              ? 'bg-[#272a33] text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+              }`}
           >
             <Video className="w-4 h-4" />
             <span className="text-[10px]">Live Video</span>
@@ -176,11 +199,10 @@ export default function GuestDownloadScreen({ photoId }) {
 
           <button
             onClick={() => setActiveTab('gif')}
-            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${
-              activeTab === 'gif'
-                ? 'bg-[#272a33] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
+            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${activeTab === 'gif'
+              ? 'bg-[#272a33] text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+              }`}
           >
             <Film className="w-4 h-4" />
             <span className="text-[10px]">GIF Boomerang</span>
@@ -188,11 +210,10 @@ export default function GuestDownloadScreen({ photoId }) {
 
           <button
             onClick={() => setActiveTab('poses')}
-            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${
-              activeTab === 'poses'
-                ? 'bg-[#272a33] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
+            className={`py-2 px-1 rounded-xl text-xs font-bold font-mono-tech flex flex-col items-center gap-1 transition-all cursor-pointer ${activeTab === 'poses'
+              ? 'bg-[#272a33] text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+              }`}
           >
             <Layers className="w-4 h-4" />
             <span className="text-[10px]">Pose Satuan</span>
@@ -209,15 +230,15 @@ export default function GuestDownloadScreen({ photoId }) {
 
         {/* Tab Card Container */}
         <div className="w-full p-4 rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] flex flex-col items-center">
-          
+
           {/* TAB 1: FOTO STRIP HD */}
           {activeTab === 'strip' && (
             <div className="w-full flex flex-col items-center">
-              <div className="relative max-h-[46vh] overflow-hidden rounded-2xl border-2 border-[#272a33] shadow-md bg-slate-50 flex items-center justify-center p-1">
-                <img 
-                  src={stripUrl} 
-                  alt="SnapBooth Strip" 
-                  className="max-h-[43vh] w-auto object-contain rounded-xl"
+              <div className="relative w-full max-w-[270px] overflow-hidden rounded-2xl border-2 border-[#272a33] shadow-md bg-slate-50 flex items-center justify-center p-1">
+                <img
+                  src={stripUrl}
+                  alt="SnapBooth Strip"
+                  className="w-full h-auto object-contain rounded-xl"
                   onError={(e) => { e.target.onerror = null; }}
                 />
               </div>
@@ -236,15 +257,15 @@ export default function GuestDownloadScreen({ photoId }) {
           {/* TAB 2: LIVE MOTION VIDEO */}
           {activeTab === 'video' && (
             <div className="w-full flex flex-col items-center">
-              <div className="relative max-h-[46vh] w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-[#272a33] shadow-md bg-black flex items-center justify-center">
-                <video 
-                  autoPlay 
-                  loop 
-                  muted 
-                  playsInline 
+              <div className="relative w-full max-w-[270px] overflow-hidden rounded-2xl border-2 border-[#272a33] shadow-md bg-black flex items-center justify-center">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   controls
                   preload="auto"
-                  className="max-h-[43vh] w-full object-contain rounded-xl"
+                  className="w-full h-auto object-contain rounded-xl"
                   onError={() => setHasVideo(false)}
                 >
                   <source src={videoMp4Url} type="video/mp4" />
@@ -267,11 +288,11 @@ export default function GuestDownloadScreen({ photoId }) {
           {/* TAB 3: BOOMERANG GIF */}
           {activeTab === 'gif' && (
             <div className="w-full flex flex-col items-center">
-              <div className="relative max-h-[46vh] max-w-[280px] overflow-hidden rounded-2xl border-2 border-[#272a33] shadow-md bg-slate-50 flex items-center justify-center p-1">
-                <img 
-                  src={gifUrl} 
-                  alt="SnapBooth GIF Boomerang" 
-                  className="max-h-[43vh] w-auto object-contain rounded-xl"
+              <div className="relative w-full max-w-[270px] overflow-hidden rounded-2xl border-2 border-[#272a33] shadow-md bg-slate-50 flex items-center justify-center p-1">
+                <img
+                  src={gifUrl}
+                  alt="SnapBooth GIF Boomerang"
+                  className="w-full h-auto object-contain rounded-xl"
                   onError={() => setHasGif(false)}
                 />
               </div>
@@ -290,16 +311,16 @@ export default function GuestDownloadScreen({ photoId }) {
           {/* TAB 4: INDIVIDUAL POSES */}
           {activeTab === 'poses' && (
             <div className="w-full flex flex-col items-center">
-              <div className="w-full grid grid-cols-2 gap-2.5 max-h-[46vh] overflow-y-auto pr-1">
+              <div className="w-full grid grid-cols-2 gap-2.5">
                 {poses.map((poseUrl, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className="flex flex-col items-center p-2 rounded-2xl bg-slate-50 border-2 border-[#272a33] shadow-sm group hover:border-amber-400 transition-all"
                   >
                     <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-200 border border-[#272a33]/20 mb-2">
-                      <img 
-                        src={poseUrl} 
-                        alt={`Pose ${idx + 1}`} 
+                      <img
+                        src={poseUrl}
+                        alt={`Pose ${idx + 1}`}
                         className="w-full h-full object-cover"
                         onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                       />
@@ -325,7 +346,7 @@ export default function GuestDownloadScreen({ photoId }) {
       </main>
 
       {/* Footer */}
-      <footer className="w-full max-w-md text-center py-3 z-10">
+      <footer className="w-full max-w-md text-center py-4 mt-6 pb-6 z-10">
         <p className="text-[11px] text-slate-500 font-mono-tech">
           © {new Date().getFullYear()} SnapBooth • All Rights Reserved
         </p>
