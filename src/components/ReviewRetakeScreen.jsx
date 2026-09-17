@@ -61,7 +61,7 @@ export default function ReviewRetakeScreen() {
       </div>
 
       {/* ================= TOP HEADER ================= */}
-      <div className="w-full max-w-4xl flex justify-between items-center z-20">
+      <div className="w-full max-w-6xl flex justify-between items-center z-20">
         <div className="flex items-center gap-3.5">
           <div className="p-3 rounded-2xl bg-[#272a33] text-white shadow-md">
             <Camera className="w-6 h-6" />
@@ -99,13 +99,13 @@ export default function ReviewRetakeScreen() {
         </div>
       </div>
 
-      {/* ================= CENTER IMAGE PREVIEW BOX ================= */}
-      <div className="relative max-h-[58vh] max-w-2xl w-full my-auto rounded-3xl overflow-hidden bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33] flex items-center justify-center p-3.5 z-10">
+      {/* ================= CENTER IMAGE PREVIEW BOX (ENLARGED) ================= */}
+      <div className="relative max-h-[66vh] max-w-5xl w-full flex-1 my-2 sm:my-3 rounded-3xl overflow-hidden bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33] flex items-center justify-center p-3 sm:p-4 z-10">
         {photo ? (
           <img 
             src={photo} 
             alt={`Pose ${currentPoseIndex + 1}`} 
-            className="max-h-[52vh] w-auto object-contain rounded-2xl border-2 border-[#272a33] shadow-md"
+            className="max-h-[60vh] max-w-full w-auto object-contain rounded-2xl border-2 border-[#272a33] shadow-md"
           />
         ) : (
           <div className="p-12 text-slate-500 font-bold text-center">Foto tidak tersedia</div>
@@ -114,14 +114,14 @@ export default function ReviewRetakeScreen() {
 
       {/* Retake Status Notice if quota exceeded */}
       {!canRetake && (
-        <div className="w-full max-w-md py-2 px-4 rounded-xl bg-[#fda4af] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] text-[#272a33] text-center text-xs font-bold mb-2 flex items-center justify-center gap-2 z-20">
+        <div className="w-full max-w-lg py-2 px-4 rounded-xl bg-[#fda4af] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] text-[#272a33] text-center text-xs font-bold mb-2 flex items-center justify-center gap-2 z-20">
           <AlertCircle className="w-4 h-4 text-[#272a33]" />
           <span>Batas 2x foto ulang telah tercapai. Foto ini otomatis digunakan.</span>
         </div>
       )}
 
       {/* ================= BOTTOM ACTION CONTROLS ================= */}
-      <div className="w-full max-w-2xl flex gap-4 items-center justify-center pt-2 z-20">
+      <div className="w-full max-w-4xl flex gap-4 items-center justify-center pt-2 z-20">
         {/* Retake Button */}
         <button
           onClick={handleRetakePose}

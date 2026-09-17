@@ -301,7 +301,7 @@ export default function CameraSessionScreen() {
       </div>
 
       {/* ================= TOP HEADER ================= */}
-      <div className="w-full max-w-5xl flex justify-between items-center z-20">
+      <div className="w-full max-w-6xl flex justify-between items-center z-20">
         <div className="flex items-center gap-3.5">
           <div className="p-3 rounded-2xl bg-[#272a33] text-white shadow-md">
             <Camera className="w-6 h-6" />
@@ -341,8 +341,8 @@ export default function CameraSessionScreen() {
       </div>
 
       {/* ================= MAIN CAMERA VIEWFINDER ================= */}
-      <div className="relative w-full max-w-4xl flex-1 my-3 rounded-3xl overflow-hidden border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33] flex items-center justify-center bg-black z-10">
-        {/* Live Video Feed */}
+      <div className="relative w-full max-w-6xl flex-1 my-2 sm:my-3 rounded-3xl overflow-hidden border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33] flex items-center justify-center bg-black z-10">
+        {/* Live Video Feed (100% Crisp, No Blur/Bokeh) */}
         <video
           ref={videoRef}
           autoPlay
@@ -378,27 +378,41 @@ export default function CameraSessionScreen() {
           </div>
         </div>
 
-        {/* Giant Countdown Overlay */}
+        {/* Top-Left REC Live Status Badge */}
         {countdown !== null && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex flex-col items-center justify-center z-30 animate-pulse-slow">
-            <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-[#fde047] p-2 flex items-center justify-center border-4 border-[#272a33] shadow-[8px_8px_0px_#272a33] animate-bounce-subtle">
-              <div className="w-full h-full rounded-full bg-[#272a33] flex items-center justify-center">
+          <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-30 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#272a33]/85 border-2 border-red-400 text-white shadow-[2px_2px_0px_#272a33] pointer-events-none">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping inline-block" />
+            <span className="text-[11px] sm:text-xs font-mono-tech font-bold tracking-widest text-red-200 uppercase">
+              REC LIVE
+            </span>
+          </div>
+        )}
+
+        {/* Floating Top-Right Countdown Badge (Non-blocking & No Blur) */}
+        {countdown !== null && (
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex items-center gap-3 pointer-events-none">
+            <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-[#272a33]/90 border-2 border-[#fde047] shadow-[3px_3px_0px_#272a33] text-white">
+              <Smile className="w-4 h-4 text-amber-300 animate-bounce" />
+              <span 
+                className="font-black text-xs uppercase tracking-wider text-[#fde047]"
+                style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+              >
+                {countdown === 'SMILE!' ? 'SENYUM!' : 'SIAP-SIAP POSE!'}
+              </span>
+            </div>
+
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#fde047] p-1.5 flex items-center justify-center border-3 border-[#272a33] shadow-[4px_4px_0px_#272a33]">
+              <div className="w-full h-full rounded-xl bg-[#272a33] flex items-center justify-center">
                 <span 
-                  className="font-black text-6xl sm:text-7xl text-[#fef08a] tracking-wider uppercase drop-shadow-md"
+                  key={countdown}
+                  className={`font-black tracking-wider uppercase text-[#fef08a] drop-shadow-md ${
+                    countdown === 'SMILE!' ? 'text-xs sm:text-sm text-center px-1' : 'text-3xl sm:text-4xl'
+                  }`}
                   style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
                 >
                   {countdown}
                 </span>
               </div>
-            </div>
-            <div className="mt-5 px-6 py-2.5 rounded-full bg-[#272a33] border-2 border-[#fde047] shadow-[4px_4px_0px_#272a33] flex items-center gap-2.5">
-              <Smile className="w-6 h-6 text-amber-300" />
-              <span 
-                className="text-white font-black text-lg sm:text-xl tracking-wider uppercase"
-                style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
-              >
-                SIAP-SIAP POSE!
-              </span>
             </div>
           </div>
         )}
