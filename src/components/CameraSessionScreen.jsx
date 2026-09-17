@@ -98,9 +98,12 @@ export default function CameraSessionScreen() {
   // Start short video clip recording during countdown
   const startPoseVideoRecording = () => {
     try {
-      if (!activeStreamRef.current) return;
+      const stream = activeStreamRef.current || (videoRef.current && videoRef.current.srcObject);
+      if (!stream) {
+        console.warn('No active camera stream available for video recording');
+        return;
+      }
       videoChunksRef.current = [];
-      const stream = activeStreamRef.current;
       const mimeType = getSupportedVideoMimeType();
       
       let recorder;
@@ -241,8 +244,10 @@ export default function CameraSessionScreen() {
     }, 1000);
   };
 
-  // Auto trigger countdown when entering pose
+  // Auto trigger countdown when entering pose and camera stream is active
   useEffect(() => {
+    if (!streamActive && !cameraError) return;
+
     const timer = setTimeout(() => {
       startCountdownSequence();
     }, 1200);
@@ -250,7 +255,7 @@ export default function CameraSessionScreen() {
       clearTimeout(timer);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [currentPoseIndex]);
+  }, [currentPoseIndex, streamActive, cameraError]);
 
   return (
     <div className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-8 bg-grid-notebook text-slate-900 overflow-hidden select-none">

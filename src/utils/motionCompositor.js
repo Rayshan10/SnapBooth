@@ -22,15 +22,17 @@ export function getSupportedVideoMimeType() {
  * @param {Object} template - frame template definition
  * @param {string} filterId - filter preset id
  * @param {Object} eventSettings - title, subtitle, date, etc.
- * @param {number} durationMs - total video duration (default 3500ms)
+ * @param {Array<string>} fallbackPhotos - array of photo data URLs if video is unavailable
+ * @param {number} durationMs - total video duration (default 4000ms = 4 detik)
  * @returns {Promise<Blob>} Video Blob (video/mp4 or video/webm)
  */
 export async function renderMotionVideoStrip(
-  videoClips,
+  videoClips = [],
   template,
   filterId = 'normal',
   eventSettings = {},
-  durationMs = 3500
+  fallbackPhotos = [],
+  durationMs = 4000
 ) {
   return new Promise(async (resolve, reject) => {
     try {
@@ -44,9 +46,9 @@ export async function renderMotionVideoStrip(
       canvas.height = height;
       const ctx = canvas.getContext('2d');
 
-      // Create video elements for each pose
+      // 1. Create video elements for each pose
       const videoElements = await Promise.all(
-        videoClips.map((clip) => {
+        (videoClips || []).map((clip) => {
           return new Promise((res) => {
             if (!clip) return res(null);
             const vid = document.createElement('video');
@@ -61,7 +63,21 @@ export async function renderMotionVideoStrip(
               res(vid);
             };
             vid.onerror = () => res(null);
-            setTimeout(() => res(vid), 1200); // safety timeout
+            setTimeout(() => res(vid), 1000); // safety timeout
+          });
+        })
+      );
+
+      // 2. Create fallback image elements for photos if any video clip is missing
+      const imageElements = await Promise.all(
+        (fallbackPhotos || []).map((photoUrl) => {
+          return new Promise((res) => {
+            if (!photoUrl) return res(null);
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => res(img);
+            img.onerror = () => res(null);
+            img.src = photoUrl;
           });
         })
       );
@@ -102,12 +118,15 @@ export async function renderMotionVideoStrip(
       recorder.start(100);
 
       const startTime = performance.now();
-      let animId;
+      let animFrameId = null;
 
       function drawFrame(currentTime) {
         const elapsed = currentTime - startTime;
         if (elapsed >= durationMs) {
-          recorder.stop();
+          if (animFrameId) cancelAnimationFrame(animFrameId);
+          if (recorder.state !== 'inactive') {
+            recorder.stop();
+          }
           return;
         }
 
@@ -135,6 +154,7 @@ export async function renderMotionVideoStrip(
 
           for (let i = 0; i < posesCount; i++) {
             const vid = videoElements[i];
+            const fallbackImg = imageElements[i];
             const y = padTop + i * (itemHeight + gap);
 
             ctx.save();
@@ -157,6 +177,21 @@ export async function renderMotionVideoStrip(
                 dy = y - (dh - itemHeight) / 2;
               }
               ctx.drawImage(vid, dx, dy, dw, dh);
+            } else if (fallbackImg) {
+              applyCanvasFilter(ctx, itemWidth, itemHeight, filterId);
+              // Draw fallback image with subtle motion
+              const iAspect = fallbackImg.naturalWidth / fallbackImg.naturalHeight;
+              const bAspect = itemWidth / itemHeight;
+              let dw = itemWidth, dh = itemHeight, dx = padX, dy = y;
+
+              if (iAspect > bAspect) {
+                dw = itemHeight * iAspect;
+                dx = padX - (dw - itemWidth) / 2;
+              } else {
+                dh = itemWidth / iAspect;
+                dy = y - (dh - itemHeight) / 2;
+              }
+              ctx.drawImage(fallbackImg, dx, dy, dw, dh);
             } else {
               ctx.fillStyle = '#cbd5e1';
               ctx.fillRect(padX, y, itemWidth, itemHeight);
@@ -177,6 +212,7 @@ export async function renderMotionVideoStrip(
             const x = padX + col * (itemWidth + gridGap);
             const y = padTop + row * (itemHeight + gridGap);
             const vid = videoElements[i];
+            const fallbackImg = imageElements[i];
 
             ctx.save();
             ctx.beginPath();
@@ -186,6 +222,9 @@ export async function renderMotionVideoStrip(
             if (vid && vid.readyState >= 2) {
               applyCanvasFilter(ctx, itemWidth, itemHeight, filterId);
               ctx.drawImage(vid, x, y, itemWidth, itemHeight);
+            } else if (fallbackImg) {
+              applyCanvasFilter(ctx, itemWidth, itemHeight, filterId);
+              ctx.drawImage(fallbackImg, x, y, itemWidth, itemHeight);
             } else {
               ctx.fillStyle = '#cbd5e1';
               ctx.fillRect(x, y, itemWidth, itemHeight);
@@ -201,10 +240,10 @@ export async function renderMotionVideoStrip(
         ctx.font = '14px "Plus Jakarta Sans", sans-serif';
         ctx.fillText(eventSettings.date || new Date().toLocaleDateString('id-ID'), width / 2, height - 35);
 
-        requestAnimationFrame(drawFrame);
+        animFrameId = requestAnimationFrame(drawFrame);
       }
 
-      requestAnimationFrame(drawFrame);
+      animFrameId = requestAnimationFrame(drawFrame);
     } catch (error) {
       console.error('Error rendering motion video strip:', error);
       reject(error);

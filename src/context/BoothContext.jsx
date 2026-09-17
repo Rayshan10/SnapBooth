@@ -180,17 +180,17 @@ export function BoothProvider({ children }) {
         console.warn('Boomerang GIF generation error:', e);
       }
 
-      // 3. Render Live Motion Video Strip if video clips exist
+      // 3. Render Live Motion Video Strip (4 seconds duration)
       let motionVideoBlob = null;
       try {
-        if (capturedVideos && capturedVideos.length > 0) {
-          motionVideoBlob = await renderMotionVideoStrip(
-            capturedVideos,
-            selectedFrame,
-            filterId,
-            eventSettings
-          );
-        }
+        motionVideoBlob = await renderMotionVideoStrip(
+          capturedVideos,
+          selectedFrame,
+          filterId,
+          eventSettings,
+          capturedPhotos,
+          4000
+        );
       } catch (e) {
         console.warn('Motion video generation error:', e);
       }
