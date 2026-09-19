@@ -186,34 +186,58 @@ export async function renderHighResPhotoStrip(photoDataUrls, template, filterId,
       ctx.drawImage(img, sx, sy, sw, sh, marginX, photoY, photoW, photoH);
       ctx.restore();
 
-      // Draw subtle photo border
-      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(marginX, photoY, photoW, photoH);
+      // Draw subtle photo border if not using full custom overlay
+      if (!template.overlayImage) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(marginX, photoY, photoW, photoH);
+      }
     }
 
-    // Draw Footer (Event Date, Location, SnapBooth branding)
-    const footerY = H - footerHeight + 40;
-    
-    // Decorative separator line
-    ctx.strokeStyle = template.borderColor;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(marginX + 40, footerY);
-    ctx.lineTo(W - marginX - 40, footerY);
-    ctx.stroke();
+    // Draw Custom PNG Overlay if exists (draws on top of photos)
+    if (template.overlayImage) {
+      try {
+        const overlayImg = await loadImage(template.overlayImage);
+        ctx.drawImage(overlayImg, 0, 0, W, H);
+      } catch (err) {
+        console.warn('Could not load custom frame overlay:', err);
+      }
+    }
 
-    ctx.fillStyle = template.textColor;
-    ctx.font = 'bold 26px "Outfit", sans-serif';
-    ctx.fillText(eventInfo.subtitle || 'MEMORIES NEVER FADE', W / 2, footerY + 45);
+    // Draw Default Header / Footer text only if not suppressed by custom template
+    if (!template.hideDefaultText) {
+      // Header logo / text
+      if (eventInfo?.title && !template.overlayImage) {
+        ctx.fillStyle = template.textColor;
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 22px "Outfit", sans-serif';
+        ctx.fillText(eventInfo.title.toUpperCase(), W / 2, 48);
+      }
 
-    ctx.fillStyle = template.subtextColor;
-    ctx.font = '500 18px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(eventInfo.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), W / 2, footerY + 80);
+      // Draw Footer (Event Date, Location, SnapBooth branding)
+      const footerY = H - footerHeight + 40;
+      
+      // Decorative separator line
+      ctx.strokeStyle = template.borderColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(marginX + 40, footerY);
+      ctx.lineTo(W - marginX - 40, footerY);
+      ctx.stroke();
 
-    ctx.font = 'bold 15px "Space Grotesk", monospace';
-    ctx.fillStyle = template.subtextColor;
-    ctx.fillText(`SNAPBOOTH • ${eventInfo.location || 'JAKARTA, ID'}`, W / 2, footerY + 115);
+      ctx.fillStyle = template.textColor;
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 26px "Outfit", sans-serif';
+      ctx.fillText(eventInfo?.subtitle || 'MEMORIES NEVER FADE', W / 2, footerY + 45);
+
+      ctx.fillStyle = template.subtextColor;
+      ctx.font = '500 18px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(eventInfo?.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), W / 2, footerY + 80);
+
+      ctx.font = 'bold 15px "Space Grotesk", monospace';
+      ctx.fillStyle = template.subtextColor;
+      ctx.fillText(`SNAPBOOTH • ${eventInfo?.location || 'JAKARTA, ID'}`, W / 2, footerY + 115);
+    }
 
   } else {
     // 4R Grid layout: 4x6 inch = 1200 x 1800 px
@@ -222,12 +246,14 @@ export async function renderHighResPhotoStrip(photoDataUrls, template, filterId,
     canvas.width = W;
     canvas.height = H;
 
-    ctx.fillStyle = template.bgColor;
+    ctx.fillStyle = template.bgColor || '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    ctx.strokeStyle = template.borderColor;
-    ctx.lineWidth = 16;
-    ctx.strokeRect(8, 8, W - 16, H - 16);
+    if (!template.overlayImage) {
+      ctx.strokeStyle = template.borderColor || '#e2e8f0';
+      ctx.lineWidth = 16;
+      ctx.strokeRect(8, 8, W - 16, H - 16);
+    }
 
     const margin = 60;
     const headerH = 100;
@@ -240,10 +266,12 @@ export async function renderHighResPhotoStrip(photoDataUrls, template, filterId,
     const photoH = (gridH - gridGap) / 2; // 685 px each
 
     // Header Title
-    ctx.fillStyle = template.textColor;
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 36px "Outfit", sans-serif';
-    ctx.fillText(eventInfo.title.toUpperCase(), W / 2, 70);
+    if (!template.overlayImage && !template.hideDefaultText) {
+      ctx.fillStyle = template.textColor;
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 36px "Outfit", sans-serif';
+      ctx.fillText((eventInfo?.title || 'SNAPBOOTH EVENT').toUpperCase(), W / 2, 70);
+    }
 
     // Photos 2x2 Grid
     for (let i = 0; i < 4; i++) {
@@ -284,18 +312,31 @@ export async function renderHighResPhotoStrip(photoDataUrls, template, filterId,
       ctx.restore();
     }
 
+    // Draw Custom PNG Overlay if exists (draws on top of photos)
+    if (template.overlayImage) {
+      try {
+        const overlayImg = await loadImage(template.overlayImage);
+        ctx.drawImage(overlayImg, 0, 0, W, H);
+      } catch (err) {
+        console.warn('Could not load custom frame overlay:', err);
+      }
+    }
+
     // Footer Info
-    const footerY = H - footerH + 70;
-    ctx.fillStyle = template.textColor;
-    ctx.font = 'bold 38px "Outfit", sans-serif';
-    ctx.fillText(eventInfo.subtitle || 'SPECIAL MOMENT', W / 2, footerY);
+    if (!template.hideDefaultText) {
+      const footerY = H - footerH + 70;
+      ctx.fillStyle = template.textColor;
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 38px "Outfit", sans-serif';
+      ctx.fillText(eventInfo?.subtitle || 'SPECIAL MOMENT', W / 2, footerY);
 
-    ctx.fillStyle = template.subtextColor;
-    ctx.font = '500 24px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(eventInfo.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), W / 2, footerY + 50);
+      ctx.fillStyle = template.subtextColor;
+      ctx.font = '500 24px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(eventInfo?.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), W / 2, footerY + 50);
 
-    ctx.font = 'bold 20px "Space Grotesk", monospace';
-    ctx.fillText(`POWERED BY SNAPBOOTH • ${eventInfo.location || 'SPECIAL EVENT'}`, W / 2, footerY + 95);
+      ctx.font = 'bold 20px "Space Grotesk", monospace';
+      ctx.fillText(`POWERED BY SNAPBOOTH • ${eventInfo?.location || 'SPECIAL EVENT'}`, W / 2, footerY + 95);
+    }
   }
 
   return canvas.toDataURL('image/jpeg', 0.95);

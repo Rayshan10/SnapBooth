@@ -1,10 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { FRAME_TEMPLATES, renderHighResPhotoStrip } from '../utils/canvasRenderer';
 import { FILTERS } from '../utils/filterEngine';
 import { saveSoftfileAndGenerateQR, pruneExpiredPhotos } from '../utils/storageMock';
 import { generateGifFromPhotos } from '../utils/gifGenerator';
 import { renderMotionVideoStrip } from '../utils/motionCompositor';
-import { createSoftfileZip } from '../utils/zipPackager';
+import { createSoftfileZip, exportMasterEventZip } from '../utils/zipPackager';
+import { 
+  getAllFrames, 
+  saveCustomFrame, 
+  deleteCustomFrame, 
+  setFrameVisibility 
+} from '../utils/customFrameStorage';
 import { sounds } from '../utils/audio';
 
 const BoothContext = createContext(null);
@@ -26,6 +32,10 @@ const DEFAULT_EVENT_SETTINGS = {
   location: 'JAKARTA, ID',
   price: 35000,
   countdownSec: 3,
+  maxRetakes: 2,
+  motionDurationSec: 4,
+  eventMode: 'paid', // 'paid' | 'free'
+  adminPin: '',
   enableSound: true,
   cameraDeviceId: '',
   printerName: 'DNP DS-RX1HS / Default',
@@ -52,7 +62,23 @@ export function BoothProvider({ children }) {
     }
   });
 
-  const [selectedFrame, setSelectedFrame] = useState(FRAME_TEMPLATES[0]);
+  // Frames state (all built-in + custom frames)
+  const [allFramesList, setAllFramesList] = useState(() => getAllFrames(true));
+
+  // Refresh frames from storage
+  const refreshFrames = useCallback(() => {
+    const updated = getAllFrames(true);
+    setAllFramesList(updated);
+  }, []);
+
+  // Compute currently enabled frames for guest selection
+  const availableFrames = allFramesList.filter(f => f.enabled !== false);
+
+  const [selectedFrame, setSelectedFrame] = useState(() => {
+    const enabled = getAllFrames(false);
+    return enabled[0] || FRAME_TEMPLATES[0];
+  });
+
   const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
   const [capturedPhotos, setCapturedPhotos] = useState([]);
   const [capturedVideos, setCapturedVideos] = useState([]);
@@ -67,7 +93,6 @@ export function BoothProvider({ children }) {
   // Clean expired photos on mount
   useEffect(() => {
     pruneExpiredPhotos();
-    // Check if URL has ?photoId=
     const params = new URLSearchParams(window.location.search);
     const photoId = params.get('photoId');
     if (photoId) {
@@ -82,6 +107,24 @@ export function BoothProvider({ children }) {
     localStorage.setItem('snapbooth_admin_settings', JSON.stringify(merged));
   };
 
+  // Custom Frame Actions
+  const addCustomFrame = (frameData) => {
+    const saved = saveCustomFrame(frameData);
+    refreshFrames();
+    return saved;
+  };
+
+  const deleteCustomFrameById = (id) => {
+    const success = deleteCustomFrame(id);
+    refreshFrames();
+    return success;
+  };
+
+  const toggleFrameEnabled = (id, enabled) => {
+    setFrameVisibility(id, enabled);
+    refreshFrames();
+  };
+
   // Start new session
   const startNewSession = () => {
     sounds.playButtonClick();
@@ -93,7 +136,13 @@ export function BoothProvider({ children }) {
     setFinalRenderedPhoto(null);
     setSoftfileInfo(null);
     setIsPrinting(false);
-    setStep(STEPS.PAYMENT);
+
+    // If Event Mode is Free, jump directly to Frame Selection Screen
+    if (eventSettings.eventMode === 'free') {
+      setStep(STEPS.FRAME_SELECT);
+    } else {
+      setStep(STEPS.PAYMENT);
+    }
   };
 
   // After Payment Success
@@ -129,10 +178,11 @@ export function BoothProvider({ children }) {
     setStep(STEPS.REVIEW_RETAKE);
   };
 
-  // Retake current pose (max 2 times)
+  // Retake current pose (respect maxRetakes from settings)
   const handleRetakePose = () => {
+    const maxRetakes = Number(eventSettings.maxRetakes ?? 2);
     const currentCount = retakeCounts[currentPoseIndex] || 0;
-    if (currentCount >= 2) return; // Disallow
+    if (currentCount >= maxRetakes) return; // Disallow
 
     sounds.playButtonClick();
     setRetakeCounts({
@@ -180,16 +230,17 @@ export function BoothProvider({ children }) {
         console.warn('Boomerang GIF generation error:', e);
       }
 
-      // 3. Render Live Motion Video Strip (4 seconds duration)
+      // 3. Render Live Motion Video Strip
       let motionVideoBlob = null;
       try {
+        const durationMs = (Number(eventSettings.motionDurationSec) || 4) * 1000;
         motionVideoBlob = await renderMotionVideoStrip(
           capturedVideos,
           selectedFrame,
           filterId,
           eventSettings,
           capturedPhotos,
-          4000
+          durationMs
         );
       } catch (e) {
         console.warn('Motion video generation error:', e);
@@ -231,7 +282,6 @@ export function BoothProvider({ children }) {
     setIsPrinting(true);
     sounds.playPrintSound();
 
-    // Trigger window print or electron print
     setTimeout(() => {
       setIsPrinting(false);
       sounds.playSuccessChime();
@@ -257,8 +307,15 @@ export function BoothProvider({ children }) {
         setStep,
         eventSettings,
         updateSettings,
+        allFramesList,
+        availableFrames,
         selectedFrame,
         setSelectedFrame,
+        addCustomFrame,
+        deleteCustomFrameById,
+        toggleFrameEnabled,
+        refreshFrames,
+        exportMasterEventZip,
         currentPoseIndex,
         capturedPhotos,
         retakeCounts,

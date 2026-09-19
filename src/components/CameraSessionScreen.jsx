@@ -5,11 +5,11 @@ import { getSupportedVideoMimeType } from '../utils/motionCompositor';
 import { Camera, RefreshCw, Sparkles, Smile, VideoOff, FlipHorizontal } from 'lucide-react';
 
 export default function CameraSessionScreen() {
-  const { 
-    selectedFrame, 
-    currentPoseIndex, 
-    eventSettings, 
-    handlePhotoCaptured 
+  const {
+    selectedFrame,
+    currentPoseIndex,
+    eventSettings,
+    handlePhotoCaptured
   } = useBooth();
 
   const videoRef = useRef(null);
@@ -41,7 +41,7 @@ export default function CameraSessionScreen() {
       try {
         setCameraError(null);
         let constraints = {
-          video: eventSettings.cameraDeviceId 
+          video: eventSettings.cameraDeviceId
             ? { deviceId: { exact: eventSettings.cameraDeviceId }, width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' }
             : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
           audio: false
@@ -105,7 +105,7 @@ export default function CameraSessionScreen() {
       }
       videoChunksRef.current = [];
       const mimeType = getSupportedVideoMimeType();
-      
+
       let recorder;
       try {
         recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
@@ -307,7 +307,7 @@ export default function CameraSessionScreen() {
             <Camera className="w-6 h-6" />
           </div>
           <div>
-            <h2 
+            <h2
               className="text-2xl md:text-3xl font-black text-[#343a59] leading-tight tracking-tight uppercase"
               style={{ fontFamily: "'Dela Gothic One', 'Bungee', 'Fredoka', sans-serif" }}
             >
@@ -348,9 +348,8 @@ export default function CameraSessionScreen() {
           autoPlay
           playsInline
           muted
-          className={`w-full h-full object-cover transition-transform duration-200 ${
-            isMirrored ? 'scale-x-[-1]' : ''
-          } ${!streamActive ? 'hidden' : ''}`}
+          className={`w-full h-full object-cover transition-transform duration-200 ${isMirrored ? 'scale-x-[-1]' : ''
+            } ${!streamActive ? 'hidden' : ''}`}
         />
 
         {/* Fallback Simulation UI if no camera */}
@@ -359,7 +358,7 @@ export default function CameraSessionScreen() {
             <div className="w-20 h-20 rounded-full bg-slate-800/90 flex items-center justify-center mb-4 text-amber-300 border-2 border-[#272a33] shadow-lg">
               <Camera className="w-10 h-10 animate-pulse" />
             </div>
-            <h3 className="text-white font-display font-bold text-lg mb-1">Simulasi Feed Kamera Aktif</h3>
+            <h3 className="text-white font-display font-bold text-lg mb-1">Kamera Aktif</h3>
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
               {cameraError || 'Kamera sedang disiapkan. Jepretan foto otomatis disimulasikan secara jernih.'}
             </p>
@@ -393,7 +392,7 @@ export default function CameraSessionScreen() {
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex items-center gap-3 pointer-events-none">
             <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-[#272a33]/90 border-2 border-[#fde047] shadow-[3px_3px_0px_#272a33] text-white">
               <Smile className="w-4 h-4 text-amber-300 animate-bounce" />
-              <span 
+              <span
                 className="font-black text-xs uppercase tracking-wider text-[#fde047]"
                 style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
               >
@@ -403,11 +402,10 @@ export default function CameraSessionScreen() {
 
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#fde047] p-1.5 flex items-center justify-center border-3 border-[#272a33] shadow-[4px_4px_0px_#272a33]">
               <div className="w-full h-full rounded-xl bg-[#272a33] flex items-center justify-center">
-                <span 
+                <span
                   key={countdown}
-                  className={`font-black tracking-wider uppercase text-[#fef08a] drop-shadow-md ${
-                    countdown === 'SMILE!' ? 'text-xs sm:text-sm text-center px-1' : 'text-3xl sm:text-4xl'
-                  }`}
+                  className={`font-black tracking-wider uppercase text-[#fef08a] drop-shadow-md ${countdown === 'SMILE!' ? 'text-xs sm:text-sm text-center px-1' : 'text-3xl sm:text-4xl'
+                    }`}
                   style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
                 >
                   {countdown}

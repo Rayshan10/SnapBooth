@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBooth } from '../context/BoothContext';
-import { FRAME_TEMPLATES } from '../utils/canvasRenderer';
-import { LayoutGrid, Check, ArrowRight } from 'lucide-react';
+import { LayoutGrid, Check, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function FrameSelectionScreen() {
-  const { selectedFrame, handleSelectFrame } = useBooth();
-  const [activeTemplate, setActiveTemplate] = useState(selectedFrame || FRAME_TEMPLATES[0]);
+  const { availableFrames, selectedFrame, handleSelectFrame } = useBooth();
+  const [activeTemplate, setActiveTemplate] = useState(() => selectedFrame || availableFrames[0]);
+
+  // Sync if available frames change
+  useEffect(() => {
+    if (!availableFrames.some(f => f.id === activeTemplate?.id)) {
+      setActiveTemplate(availableFrames[0] || selectedFrame);
+    }
+  }, [availableFrames]);
+
+  const framesToDisplay = availableFrames && availableFrames.length > 0 ? availableFrames : [selectedFrame];
 
   return (
     <div className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-10 bg-grid-notebook text-slate-900 overflow-hidden select-none">
@@ -79,8 +87,8 @@ export default function FrameSelectionScreen() {
 
       {/* ================= FRAME CARDS GRID ================= */}
       <div className="w-full max-w-6xl grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 my-auto overflow-y-auto max-h-[66vh] py-3 px-1 z-10">
-        {FRAME_TEMPLATES.map((tmpl) => {
-          const isSelected = activeTemplate.id === tmpl.id;
+        {framesToDisplay.map((tmpl) => {
+          const isSelected = activeTemplate?.id === tmpl.id;
           return (
             <div
               key={tmpl.id}
@@ -92,8 +100,10 @@ export default function FrameSelectionScreen() {
               }`}
             >
               {/* Badge Tag on Top-Left */}
-              <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e4ecfc] text-[#272a33] border border-[#272a33] font-mono-tech">
-                {tmpl.tag}
+              <div className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#272a33] font-mono-tech ${
+                tmpl.isCustom ? 'bg-[#fef08a] text-[#272a33]' : 'bg-[#e4ecfc] text-[#272a33]'
+              }`}>
+                {tmpl.tag || (tmpl.isCustom ? 'Custom' : 'Preset')}
               </div>
 
               {/* Selected Checkmark Badge on Top-Right */}
@@ -105,20 +115,22 @@ export default function FrameSelectionScreen() {
 
               {/* Visual Strip Miniature Mockup */}
               <div 
-                className="w-20 h-40 rounded-xl shadow-md border-2 border-[#272a33] my-3 p-1.5 flex flex-col justify-between items-center transition-transform"
+                className="relative w-20 h-40 rounded-xl shadow-md border-2 border-[#272a33] my-3 p-1.5 flex flex-col justify-between items-center transition-transform overflow-hidden"
                 style={{
-                  backgroundColor: tmpl.bgColor,
+                  backgroundColor: tmpl.bgColor || '#ffffff',
                   borderColor: tmpl.borderColor || '#272a33'
                 }}
               >
-                {/* Header mock */}
-                <div className="w-10 h-1.5 rounded-full" style={{ backgroundColor: tmpl.textColor, opacity: 0.6 }} />
+                {/* Header mock if no custom overlay */}
+                {!tmpl.overlayImage && (
+                  <div className="w-10 h-1.5 rounded-full" style={{ backgroundColor: tmpl.textColor || '#1e293b', opacity: 0.6 }} />
+                )}
 
                 {/* Photo boxes */}
                 {tmpl.type === 'strip-3' && (
-                  <div className="w-full flex-1 flex flex-col gap-1 justify-center my-1">
+                  <div className="w-full flex-1 flex flex-col gap-1 justify-center my-1 z-0">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="w-full h-8 rounded bg-slate-300/60 border border-black/10 flex items-center justify-center text-[7px] font-mono-tech" style={{ color: tmpl.textColor }}>
+                      <div key={i} className="w-full h-8 rounded bg-slate-300/70 border border-black/10 flex items-center justify-center text-[7px] font-mono-tech" style={{ color: tmpl.textColor }}>
                         Pose {i}
                       </div>
                     ))}
@@ -126,9 +138,9 @@ export default function FrameSelectionScreen() {
                 )}
 
                 {tmpl.type === 'strip-4' && (
-                  <div className="w-full flex-1 flex flex-col gap-1 justify-center my-1">
+                  <div className="w-full flex-1 flex flex-col gap-1 justify-center my-1 z-0">
                     {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="w-full h-6 rounded bg-slate-300/60 border border-black/10 flex items-center justify-center text-[6.5px] font-mono-tech" style={{ color: tmpl.textColor }}>
+                      <div key={i} className="w-full h-6 rounded bg-slate-300/70 border border-black/10 flex items-center justify-center text-[6.5px] font-mono-tech" style={{ color: tmpl.textColor }}>
                         Pose {i}
                       </div>
                     ))}
@@ -136,30 +148,41 @@ export default function FrameSelectionScreen() {
                 )}
 
                 {tmpl.type === 'grid-4' && (
-                  <div className="w-full flex-1 grid grid-cols-2 gap-1 my-1 p-0.5">
+                  <div className="w-full flex-1 grid grid-cols-2 gap-1 my-1 p-0.5 z-0">
                     {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="w-full h-11 rounded bg-slate-300/60 border border-black/10 flex items-center justify-center text-[6.5px] font-mono-tech" style={{ color: tmpl.textColor }}>
+                      <div key={i} className="w-full h-11 rounded bg-slate-300/70 border border-black/10 flex items-center justify-center text-[6.5px] font-mono-tech" style={{ color: tmpl.textColor }}>
                         {i}
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Footer mock */}
-                <div className="w-12 h-1.5 rounded-full" style={{ backgroundColor: tmpl.subtextColor, opacity: 0.5 }} />
+                {/* Footer mock if no custom overlay */}
+                {!tmpl.overlayImage && (
+                  <div className="w-12 h-1.5 rounded-full" style={{ backgroundColor: tmpl.subtextColor || '#64748b', opacity: 0.5 }} />
+                )}
+
+                {/* Custom Overlay Image on Top of Mockup */}
+                {tmpl.overlayImage && (
+                  <img 
+                    src={tmpl.overlayImage} 
+                    alt={tmpl.name} 
+                    className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10" 
+                  />
+                )}
               </div>
 
               {/* Template Info */}
               <h3 className="font-display font-extrabold text-xs sm:text-sm text-[#343a59] mt-0.5 leading-snug line-clamp-1">
                 {tmpl.name}
               </h3>
-              <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
-                {tmpl.poses} Pose • {tmpl.theme}
+              <p className="text-[11px] text-slate-600 mt-0.5 font-medium line-clamp-1">
+                {tmpl.poses} Pose • {tmpl.theme || 'Custom Event'}
               </p>
               
               {/* Format Badge */}
               <span className="mt-2 text-[10px] font-mono-tech font-bold px-2 py-0.5 rounded-full bg-[#f4eedb] border border-[#272a33] text-[#272a33]">
-                {tmpl.aspectRatio} Inch
+                {tmpl.aspectRatio || (tmpl.type === 'grid-4' ? '4:6' : '2:6')} Inch
               </span>
             </div>
           );

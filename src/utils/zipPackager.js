@@ -78,3 +78,62 @@ export async function createSoftfileZip(assets) {
 
   return zipBlob;
 }
+
+/**
+ * Export all saved event sessions from localStorage into a single master ZIP file
+ * @param {string} eventTitle - name of event
+ * @returns {Promise<Blob|null>} ZIP Blob of all event photos
+ */
+export async function exportMasterEventZip(eventTitle = 'SnapBooth_Event') {
+  const raw = localStorage.getItem('snapbooth_softfiles_v1');
+  if (!raw) return null;
+
+  try {
+    const store = JSON.parse(raw);
+    const sessionIds = Object.keys(store);
+    if (sessionIds.length === 0) return null;
+
+    const zip = new JSZip();
+    const rootFolder = zip.folder(`${eventTitle.replace(/[^a-zA-Z0-9_-]/g, '_')}_MasterPhotos`);
+
+    sessionIds.forEach((id, sIdx) => {
+      const record = store[id];
+      const sessionFolder = rootFolder.folder(`Sesi_${String(sIdx + 1).padStart(3, '0')}_${id}`);
+
+      // Main Rendered Photo Strip
+      if (record.renderedPhoto) {
+        const base64Data = cleanBase64(record.renderedPhoto);
+        sessionFolder.file('PhotoStrip_HD.jpg', base64Data, { base64: true });
+      }
+
+      // Individual Poses
+      if (record.poses && record.poses.length > 0) {
+        const posesFolder = sessionFolder.folder('Pose_Satuan');
+        record.poses.forEach((poseUrl, pIdx) => {
+          if (poseUrl) {
+            const pBase64 = cleanBase64(poseUrl);
+            posesFolder.file(`Pose_${pIdx + 1}.jpg`, pBase64, { base64: true });
+          }
+        });
+      }
+
+      // GIF if stored
+      if (record.gifUrl) {
+        const gifBase64 = cleanBase64(record.gifUrl);
+        sessionFolder.file('Boomerang.gif', gifBase64, { base64: true });
+      }
+    });
+
+    const masterBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    return masterBlob;
+  } catch (err) {
+    console.error('Error generating master event zip:', err);
+    return null;
+  }
+}
+

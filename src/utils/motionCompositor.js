@@ -82,6 +82,18 @@ export async function renderMotionVideoStrip(
         })
       );
 
+      // Preload custom overlay image if provided
+      let overlayImageEl = null;
+      if (template.overlayImage) {
+        overlayImageEl = await new Promise((res) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => res(img);
+          img.onerror = () => res(null);
+          img.src = template.overlayImage;
+        });
+      }
+
       // Setup Canvas Stream Recorder
       const stream = canvas.captureStream(30); // 30 FPS
       const mimeType = getSupportedVideoMimeType();
@@ -134,11 +146,13 @@ export async function renderMotionVideoStrip(
         ctx.fillStyle = template.bgColor || '#ffffff';
         ctx.fillRect(0, 0, width, height);
 
-        // 2. Draw Header
-        ctx.fillStyle = template.textColor || '#1e293b';
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 24px "Outfit", sans-serif';
-        ctx.fillText(eventSettings.title || 'SNAPBOOTH', width / 2, 60);
+        // 2. Draw Header (only if no custom overlay or not hidden)
+        if (!template.overlayImage && !template.hideDefaultText) {
+          ctx.fillStyle = template.textColor || '#1e293b';
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 24px "Outfit", sans-serif';
+          ctx.fillText(eventSettings.title || 'SNAPBOOTH', width / 2, 60);
+        }
 
         // 3. Draw Video Boxes based on layout
         const posesCount = template.poses || 3;
@@ -233,12 +247,19 @@ export async function renderMotionVideoStrip(
           }
         }
 
-        // 4. Draw Footer Text
-        ctx.fillStyle = template.subtextColor || '#64748b';
-        ctx.font = 'bold 18px "Outfit", sans-serif';
-        ctx.fillText(eventSettings.subtitle || 'SPECIAL MEMORIES & MOMENTS', width / 2, height - 60);
-        ctx.font = '14px "Plus Jakarta Sans", sans-serif';
-        ctx.fillText(eventSettings.date || new Date().toLocaleDateString('id-ID'), width / 2, height - 35);
+        // 4. Draw Custom PNG Overlay if available
+        if (overlayImageEl) {
+          ctx.drawImage(overlayImageEl, 0, 0, width, height);
+        }
+
+        // 5. Draw Footer Text (only if not suppressed)
+        if (!template.hideDefaultText) {
+          ctx.fillStyle = template.subtextColor || '#64748b';
+          ctx.font = 'bold 18px "Outfit", sans-serif';
+          ctx.fillText(eventSettings.subtitle || 'SPECIAL MEMORIES & MOMENTS', width / 2, height - 60);
+          ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(eventSettings.date || new Date().toLocaleDateString('id-ID'), width / 2, height - 35);
+        }
 
         animFrameId = requestAnimationFrame(drawFrame);
       }
