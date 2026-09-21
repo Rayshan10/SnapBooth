@@ -339,23 +339,26 @@ export default function GuestDownloadScreen({ photoId }) {
         </svg>
       </div>
 
-      {/* TOP HEADER & DATE TIMESTAMP BANNER (Gopoto Inspiration) */}
+      {/* TOP HEADER & BRANDING */}
       <header className="w-full max-w-md text-center pt-2 pb-2 z-10">
-        {/* Date Time Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-[#272a33]/20 text-[11px] font-mono-tech font-bold text-slate-700 mb-2 shadow-xs">
-          <Calendar className="w-3.5 h-3.5 text-blue-600" />
-          <span>{sessionDateText}</span>
+        {/* Brand Badge (Top Center) */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#272a33] text-white text-xs font-mono-tech font-bold shadow-sm mb-2.5">
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <span>SNAPBOOTH</span>
         </div>
 
+        {/* Second Row: Timestamp (Left) & Share (Right) */}
         <div className="flex items-center justify-between px-1">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#272a33] text-white text-xs font-mono-tech font-bold shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>SNAPBOOTH</span>
+          {/* Date Time Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 border border-[#272a33]/20 text-[11px] font-mono-tech font-bold text-slate-700 shadow-xs">
+            <Calendar className="w-3.5 h-3.5 text-blue-600" />
+            <span>{sessionDateText}</span>
           </div>
 
+          {/* Share Button */}
           <button
             onClick={handleShare}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] text-xs font-mono-tech font-bold text-[#272a33] hover:bg-slate-50 cursor-pointer active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] text-xs font-mono-tech font-bold text-[#272a33] hover:bg-slate-50 cursor-pointer active:scale-95 transition-transform"
             title="Bagikan Foto"
           >
             <Share2 className="w-3.5 h-3.5 text-blue-600" />
