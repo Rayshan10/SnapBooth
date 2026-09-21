@@ -12,7 +12,10 @@ import {
   Share2,
   Layers,
   Eye,
-  Check
+  Check,
+  AlertTriangle,
+  RotateCcw,
+  HelpCircle
 } from 'lucide-react';
 
 export default function GuestDownloadScreen({ photoId }) {
@@ -22,6 +25,8 @@ export default function GuestDownloadScreen({ photoId }) {
   const [hasVideo, setHasVideo] = useState(true);
   const [hasGif, setHasGif] = useState(true);
   const [poses, setPoses] = useState([]);
+  const [isChecking, setIsChecking] = useState(true);
+  const [isExpired, setIsExpired] = useState(false);
 
   const stripUrl = `/uploads/${photoId}.jpg`;
   const videoMp4Url = `/uploads/${photoId}_motion.mp4`;
@@ -32,31 +37,64 @@ export default function GuestDownloadScreen({ photoId }) {
   useEffect(() => {
     let isMounted = true;
 
-    async function detectAvailablePoses() {
-      const valid = [];
+    async function checkValidityAndScanPoses() {
+      setIsChecking(true);
+
+      // 1. Check if the main photo strip exists on server
+      const exists = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = stripUrl;
+      });
+
+      // 2. Also check if expired in localStorage if accessing on same browser/device
+      let isLocalExpired = false;
+      try {
+        const raw = localStorage.getItem('snapbooth_softfiles_v1');
+        if (raw) {
+          const store = JSON.parse(raw);
+          if (store[photoId] && store[photoId].expiresAt && store[photoId].expiresAt <= Date.now()) {
+            isLocalExpired = true;
+          }
+        }
+      } catch (e) {}
+
+      if (!isMounted) return;
+
+      if (!exists || isLocalExpired) {
+        setIsExpired(true);
+        setIsChecking(false);
+        return;
+      }
+
+      setIsExpired(false);
+
+      // 3. Scan available poses
+      const validPoses = [];
       for (let i = 1; i <= 6; i++) {
-        const url = `/uploads/${photoId}_pose_${i}.jpg`;
-        const exists = await new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve(true);
-          img.onerror = () => resolve(false);
-          img.src = url;
+        const pUrl = `/uploads/${photoId}_pose_${i}.jpg`;
+        const pExists = await new Promise((resolve) => {
+          const pImg = new Image();
+          pImg.onload = () => resolve(true);
+          pImg.onerror = () => resolve(false);
+          pImg.src = pUrl;
         });
 
-        if (exists) {
-          valid.push(url);
+        if (pExists) {
+          validPoses.push(pUrl);
         } else {
-          // If a pose index doesn't exist, stop scanning
           if (i >= 3) break;
         }
       }
 
       if (isMounted) {
-        setPoses(valid.length > 0 ? valid : [1, 2, 3].map(idx => `/uploads/${photoId}_pose_${idx}.jpg`));
+        setPoses(validPoses.length > 0 ? validPoses : [1, 2, 3].map(idx => `/uploads/${photoId}_pose_${idx}.jpg`));
+        setIsChecking(false);
       }
     }
 
-    detectAvailablePoses();
+    checkValidityAndScanPoses();
     return () => { isMounted = false; };
   }, [photoId]);
 
@@ -115,6 +153,95 @@ export default function GuestDownloadScreen({ photoId }) {
     triggerDownload(poseUrl, `SnapBooth_Pose_${index + 1}_${photoId}.jpg`, `Foto Pose ke-${index + 1}`);
   };
 
+  // ================= EXPIRED SCREEN VIEW =================
+  if (!isChecking && isExpired) {
+    return (
+      <div className="w-full min-h-screen bg-white text-slate-900 flex flex-col justify-between items-center px-6 py-6 select-none font-sans">
+        
+        {/* Top Navbar */}
+        <header className="w-full max-w-lg flex justify-between items-center pb-4 border-b border-slate-100">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <span 
+              className="text-2xl font-black text-[#272a33] tracking-tight lowercase"
+              style={{ 
+                fontFamily: "'Dela Gothic One', 'Bungee', cursive, sans-serif",
+                WebkitTextStroke: '1px #272a33',
+                color: '#fff',
+                textShadow: '2px 2px 0px #272a33'
+              }}
+            >
+              snapbooth
+            </span>
+          </div>
+
+          {/* Share / Info icon */}
+          <button 
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({ title: 'SnapBooth Photo Softfile', url: window.location.href }).catch(() => {});
+              }
+            }}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 cursor-pointer transition-colors"
+            title="Bagikan"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
+        </header>
+
+        {/* Center Expired Hero Message */}
+        <main className="w-full max-w-md flex flex-col items-center justify-center text-center my-auto py-12">
+          {/* Red Expired Title */}
+          <h1 
+            className="text-2xl sm:text-3xl font-extrabold text-[#e11d48] tracking-tight mb-3"
+            style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
+          >
+            Your files have expired
+          </h1>
+
+          {/* Subtitle Message */}
+          <p className="text-slate-500 text-sm sm:text-base font-normal leading-relaxed max-w-sm">
+            The soft files have been removed from the server.
+          </p>
+
+          <p className="text-slate-400 text-xs mt-2 font-normal leading-relaxed max-w-xs">
+            File softfile telah otomatis dibersihkan dari server demi privasi & keamanan data pengunjung.
+          </p>
+
+          {/* Help Tip */}
+          <div className="mt-10 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left flex items-start gap-3 w-full">
+            <HelpCircle className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-slate-600 leading-relaxed">
+              <strong>Butuh foto ini?</strong> Jika Anda baru saja berfoto, silakan hubungi operator photo booth di lokasi acara untuk meminta file backup master event.
+            </div>
+          </div>
+        </main>
+
+        {/* Bottom Bar with Language / Branding */}
+        <footer className="w-full max-w-lg flex justify-between items-center pt-4 border-t border-slate-100 text-slate-400 text-xs font-mono">
+          <span>SnapBooth Cloud</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-base" title="Indonesia">🇮🇩</span>
+            <span className="text-slate-500 font-bold">ID / EN</span>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  // ================= LOADING STATE =================
+  if (isChecking) {
+    return (
+      <div className="w-full min-h-screen bg-[#f3edd9] bg-grid-notebook flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-12 h-12 rounded-full border-4 border-[#272a33] border-t-amber-400 animate-spin mb-4" />
+        <p className="font-display font-black text-sm text-[#272a33] uppercase">
+          Memuat Softfile Foto...
+        </p>
+      </div>
+    );
+  }
+
+  // ================= ACTIVE DOWNLOAD SCREEN VIEW =================
   return (
     <div className="w-full min-h-screen bg-[#f3edd9] bg-grid-notebook text-slate-900 px-4 py-6 pb-32 sm:pb-40 flex flex-col items-center justify-start selection:bg-amber-200">
 
