@@ -23,8 +23,40 @@ import {
   ShieldCheck, 
   Layers, 
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Video,
+  Sliders,
+  RotateCcw,
+  Type
 } from 'lucide-react';
+
+// Compress image to ensure it fits comfortably within storage quota
+const compressImageFile = (file, maxWidth = 1920, quality = 0.82) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function AdminModal() {
   const { 
@@ -75,6 +107,57 @@ export default function AdminModal() {
   }, [isAdminOpen, eventSettings]);
 
   if (!isAdminOpen) return null;
+
+  // Handle Attract Screen Custom Image Upload
+  const handleAttractImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const compressedDataUrl = await compressImageFile(file, 1920, 0.82);
+      setFormData(prev => ({
+        ...prev,
+        attractBackgroundMedia: compressedDataUrl,
+        attractMediaType: 'image'
+      }));
+    } catch (err) {
+      console.error('Failed to compress image:', err);
+      alert('Gagal memproses gambar poster event.');
+    }
+  };
+
+  // Handle Attract Screen Video Upload
+  const handleAttractVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Ukuran video maksimal 8MB agar sistem kiosk tetap responsif.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({
+        ...prev,
+        attractBackgroundMedia: event.target.result,
+        attractMediaType: 'video'
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Reset Attract Background to Default
+  const handleResetAttractMedia = () => {
+    setFormData(prev => ({
+      ...prev,
+      attractBackgroundMedia: null,
+      attractMediaType: 'default',
+      attractDimming: 0,
+      attractShowDefaultTitle: true,
+      attractCustomCtaText: 'Click to Start'
+    }));
+  };
 
   // Handle File Upload for Custom Frame PNG
   const handleOverlayFileUpload = (e) => {
@@ -131,7 +214,8 @@ export default function AdminModal() {
       countdownSec: Number(formData.countdownSec) || 3,
       maxRetakes: Number(formData.maxRetakes ?? 2),
       motionDurationSec: Number(formData.motionDurationSec ?? 4),
-      autoResetDelaySec: Number(formData.autoResetDelaySec) || 90
+      autoResetDelaySec: Number(formData.autoResetDelaySec) || 90,
+      attractDimming: Number(formData.attractDimming) || 0
     });
     setIsAdminOpen(false);
   };
@@ -556,79 +640,320 @@ export default function AdminModal() {
 
           {/* ----------------- TAB 2: EVENT INFO & BRANDING ----------------- */}
           {activeTab === 'event' && (
-            <form onSubmit={handleSaveSettings} className="space-y-4">
-              <div>
-                <h4 className="font-extrabold text-base text-[#272a33] flex items-center gap-2 mb-1">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  <span>Informasi & Branding Acara</span>
-                </h4>
-                <p className="text-xs text-slate-500 mb-4">
-                  Teks ini otomatis tercetak pada footer foto dan halaman download softfile pengunjung
-                </p>
+            <form onSubmit={handleSaveSettings} className="space-y-6">
+              
+              {/* ================= SECTION A: ATTRACT SCREEN CUSTOM BACKGROUND ================= */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-pink-600" />
+                      <span>Background Layar Depan (Attract Screen Kiosk)</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 font-bold border border-pink-300">
+                        Event Theme
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Pasang poster tema acara klien (gambar atau video looping) pada layar sentuh utama photobooth
+                    </p>
+                  </div>
+
+                  {formData.attractBackgroundMedia && (
+                    <button
+                      type="button"
+                      onClick={handleResetAttractMedia}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 flex items-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset ke Default</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Media Uploader Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                  {/* Upload Controls (Left Column) */}
+                  <div className="lg:col-span-7 space-y-3.5">
+                    {/* Media Type Selection */}
+                    <div className="flex items-center gap-2">
+                      <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 text-xs font-bold cursor-pointer transition-all ${
+                        !formData.attractBackgroundMedia 
+                          ? 'bg-[#272a33] text-[#fef08a] border-[#272a33] shadow-[2px_2px_0px_#272a33]' 
+                          : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="attractType"
+                          className="hidden"
+                          checked={!formData.attractBackgroundMedia}
+                          onChange={handleResetAttractMedia}
+                        />
+                        <Sparkles className="w-4 h-4" />
+                        <span>Retro-Pop Default</span>
+                      </label>
+
+                      {/* Image Upload Label */}
+                      <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 text-xs font-bold cursor-pointer transition-all ${
+                        formData.attractMediaType === 'image' && formData.attractBackgroundMedia
+                          ? 'bg-[#272a33] text-[#fef08a] border-[#272a33] shadow-[2px_2px_0px_#272a33]' 
+                          : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={handleAttractImageUpload}
+                        />
+                        <Upload className="w-4 h-4" />
+                        <span>Upload Poster (JPG/PNG)</span>
+                      </label>
+
+                      {/* Video Upload Label */}
+                      <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 text-xs font-bold cursor-pointer transition-all ${
+                        formData.attractMediaType === 'video' && formData.attractBackgroundMedia
+                          ? 'bg-[#272a33] text-[#fef08a] border-[#272a33] shadow-[2px_2px_0px_#272a33]' 
+                          : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}>
+                        <input
+                          type="file"
+                          accept="video/mp4,video/webm"
+                          className="hidden"
+                          onChange={handleAttractVideoUpload}
+                        />
+                        <Video className="w-4 h-4" />
+                        <span>Upload Video (MP4)</span>
+                      </label>
+                    </div>
+
+                    {/* Custom Poster Settings (If Active) */}
+                    {formData.attractBackgroundMedia && (
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                        {/* Toggle Show Default Title */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">
+                              Tampilkan Tulisan "SNAP BOOTH" & Stiker 3D
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                              Matikan bila poster klien sudah ada judul acara agar tidak tumpang tindih
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ 
+                              ...prev, 
+                              attractShowDefaultTitle: prev.attractShowDefaultTitle === false ? true : false 
+                            }))}
+                            className={`px-3 py-1.5 rounded-full text-xs font-black border transition-all cursor-pointer ${
+                              formData.attractShowDefaultTitle !== false
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-400'
+                                : 'bg-slate-200 text-slate-600 border-slate-300'
+                            }`}
+                          >
+                            {formData.attractShowDefaultTitle !== false ? 'ON (Ditampilkan)' : 'OFF (Sembunyikan)'}
+                          </button>
+                        </div>
+
+                        {/* Dimming Slider */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                              <Sliders className="w-3.5 h-3.5 text-blue-500" />
+                              <span>Overlay Gelap / Dimming:</span>
+                            </label>
+                            <span className="text-xs font-bold font-mono-tech px-2 py-0.5 rounded bg-slate-200 text-slate-800">
+                              {formData.attractDimming || 0}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="80"
+                            step="5"
+                            value={formData.attractDimming || 0}
+                            onChange={e => setFormData({ ...formData, attractDimming: Number(e.target.value) })}
+                            className="w-full accent-[#272a33] cursor-pointer"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            Geser ke kanan jika warna poster terlalu terang agar tombol "Click to Start" mudah dibaca
+                          </p>
+                        </div>
+
+                        {/* Custom CTA Text */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                            <Type className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Teks Tombol Mulai (CTA Text)</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.attractCustomCtaText || 'Click to Start'}
+                            onChange={e => setFormData({ ...formData, attractCustomCtaText: e.target.value })}
+                            placeholder="Contoh: Click to Start / Sentuh Layar / Mulai Foto 📸"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Live Kiosk Screen Preview (Right Column) */}
+                  <div className="lg:col-span-5 flex flex-col items-center">
+                    <div className="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Pratinjau Layar Depan Kiosk:</span>
+                    </div>
+
+                    <div className="relative w-full aspect-[16/10] rounded-2xl border-3 border-[#272a33] overflow-hidden shadow-[4px_4px_0px_#272a33] bg-slate-900 flex flex-col justify-between p-3 select-none">
+                      {/* Media Background */}
+                      {formData.attractBackgroundMedia ? (
+                        <>
+                          {formData.attractMediaType === 'video' ? (
+                            <video
+                              src={formData.attractBackgroundMedia}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                            />
+                          ) : (
+                            <img
+                              src={formData.attractBackgroundMedia}
+                              alt="Attract Preview"
+                              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                            />
+                          )}
+                          {/* Dimming Layer in Preview */}
+                          {(formData.attractDimming || 0) > 0 && (
+                            <div 
+                              className="absolute inset-0 bg-black pointer-events-none"
+                              style={{ opacity: (formData.attractDimming || 0) / 100 }}
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-[#fffef7] flex items-center justify-center pointer-events-none">
+                          <div className="text-center">
+                            <div className="text-xl font-black text-[#343a59] font-['Dela_Gothic_One']">SNAP BOOTH</div>
+                            <div className="text-[9px] text-slate-500 font-mono-tech">DEFAULT RETRO NOTEBOOK</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Top Bar Preview */}
+                      <div className="relative z-10 w-full flex justify-between items-center">
+                        <div className="text-[8px] font-bold text-white bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-xs">
+                          {formData.title || 'Event Name'}
+                        </div>
+                        <div className="text-[8px] font-bold text-white bg-[#272a33] px-2 py-0.5 rounded-full border border-white/20">
+                          Page 01
+                        </div>
+                      </div>
+
+                      {/* Center Content Preview */}
+                      <div className="relative z-10 my-auto flex flex-col items-center text-center">
+                        {formData.attractShowDefaultTitle !== false ? (
+                          <div className="text-lg font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-['Dela_Gothic_One'] uppercase leading-tight">
+                            SNAP<br/>BOOTH
+                          </div>
+                        ) : null}
+
+                        {/* CTA Button in Preview */}
+                        <div className="mt-1 px-4 py-1.5 rounded-full bg-[#272a33] text-amber-300 text-[10px] font-black border border-amber-300/80 shadow-md">
+                          {formData.attractCustomCtaText || 'Click to Start'}
+                        </div>
+                      </div>
+
+                      {/* Bottom Footer Preview */}
+                      <div className="relative z-10 w-full flex justify-between items-center text-[8px] text-white/90">
+                        <span className="font-bold">snapbooth.id</span>
+                        <span>Sentuh layar</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ================= SECTION B: EVENT TEXT & FOOTER INFO ================= */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <span>Nama Acara / Penyelenggara</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+                  <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2 mb-0.5">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Informasi Teks & Footer Acara</span>
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Teks ini otomatis tercetak pada footer foto strip dan halaman download softfile pengunjung
+                  </p>
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <span>Tagline / Subtitle Event</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.subtitle}
-                    onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <span>Nama Acara / Penyelenggara</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={e => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Contoh: WEDDING OF ANDI & RINA / NEO FEST 2026"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <span>Tagline / Subtitle Event</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.subtitle}
+                      onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                      placeholder="Contoh: SPECIAL MEMORIES & MOMENTS"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Lokasi Acara</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={e => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="Contoh: THE RITZ-CARLTON JAKARTA"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Auto-Reset Idle Timeout (Detik)</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.autoResetDelaySec}
+                      onChange={e => setFormData({ ...formData, autoResetDelaySec: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Lokasi Acara</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={e => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Auto-Reset Idle Timeout (Detik)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.autoResetDelaySec}
-                    onChange={e => setFormData({ ...formData, autoResetDelaySec: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-slate-200">
+              {/* Submit Save Button */}
+              <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-7 py-2.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[3px_3px_0px_#3b82f6] text-xs font-black flex items-center gap-2 cursor-pointer transition-all transform hover:scale-105 active:scale-95"
+                  className="px-7 py-3 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[4px_4px_0px_#3b82f6] text-xs font-black flex items-center gap-2 cursor-pointer transition-all transform hover:scale-105 active:scale-95"
                 >
                   <Save className="w-4 h-4 text-amber-300" />
-                  <span>Simpan Pengaturan Event</span>
+                  <span>Simpan Pengaturan Event & Attract Screen</span>
                 </button>
               </div>
             </form>

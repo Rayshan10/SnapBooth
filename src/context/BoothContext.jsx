@@ -39,7 +39,13 @@ const DEFAULT_EVENT_SETTINGS = {
   enableSound: true,
   cameraDeviceId: '',
   printerName: 'DNP DS-RX1HS / Default',
-  autoResetDelaySec: 90
+  autoResetDelaySec: 90,
+  // Attract Screen (Layar Depan) Customization
+  attractBackgroundMedia: null, // base64 / dataUrl
+  attractMediaType: 'default', // 'default' | 'image' | 'video'
+  attractDimming: 0, // 0 to 80 (%)
+  attractShowDefaultTitle: true, // show/hide big SNAPBOOTH typography & stickers
+  attractCustomCtaText: 'Click to Start' // custom button label
 };
 
 export function BoothProvider({ children }) {
