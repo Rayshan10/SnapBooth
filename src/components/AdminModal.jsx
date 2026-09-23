@@ -27,7 +27,10 @@ import {
   Video,
   Sliders,
   RotateCcw,
-  Type
+  Type,
+  AlertTriangle,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 
 // Compress image to ensure it fits comfortably within storage quota
@@ -68,7 +71,10 @@ export default function AdminModal() {
     addCustomFrame,
     deleteCustomFrameById,
     toggleFrameEnabled,
-    exportMasterEventZip
+    exportMasterEventZip,
+    printerStatus,
+    resetPaperRoll,
+    reprintLastSession
   } = useBooth();
 
   const [activeTab, setActiveTab] = useState('frames'); // 'frames' | 'event' | 'camera' | 'payment' | 'export'
@@ -76,6 +82,9 @@ export default function AdminModal() {
   const [videoDevices, setVideoDevices] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [reprintFeedback, setReprintFeedback] = useState(null);
+  const [customRollInput, setCustomRollInput] = useState('');
+  const [showCustomRollModal, setShowCustomRollModal] = useState(false);
 
   // New Custom Frame Form State
   const [isAddingFrame, setIsAddingFrame] = useState(false);
@@ -285,7 +294,7 @@ export default function AdminModal() {
           {[
             { id: 'frames', label: '🎨 Kelola Frame', icon: Layers },
             { id: 'event', label: '⚙️ Info Event', icon: Sparkles },
-            { id: 'camera', label: '📷 Kamera & Sesi', icon: Camera },
+            { id: 'camera', label: '📷 Kamera & 🖨️ Printer', icon: Camera },
             { id: 'payment', label: '💳 Mode Acara', icon: DollarSign },
             { id: 'export', label: '📊 Master Galeri', icon: FolderArchive }
           ].map(tab => {
@@ -959,108 +968,344 @@ export default function AdminModal() {
             </form>
           )}
 
-          {/* ----------------- TAB 3: CAMERA & SESSION ----------------- */}
+          {/* ----------------- TAB 3: CAMERA & PRINTER MANAGEMENT ----------------- */}
           {activeTab === 'camera' && (
-            <form onSubmit={handleSaveSettings} className="space-y-4">
-              <div>
-                <h4 className="font-extrabold text-base text-[#272a33] flex items-center gap-2 mb-1">
-                  <Camera className="w-5 h-5 text-purple-600" />
-                  <span>Pengaturan Kamera & Sesi Foto</span>
-                </h4>
-                <p className="text-xs text-slate-500 mb-4">
-                  Pilih perangkat kamera DSLR/Capture Card dan atur durasi timer hitung mundur
-                </p>
+            <form onSubmit={handleSaveSettings} className="space-y-6">
+              
+              {/* ================= SECTION A: LIVE PAPER ROLL COUNTER & GAUGE ================= */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2">
+                      <Printer className="w-4 h-4 text-blue-600" />
+                      <span>Monitor Kertas & Status Roll Printer</span>
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-black border ${
+                        ((printerStatus?.paperRemaining ?? 400) / (printerStatus?.paperRollCapacity || 400)) > 0.25
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : ((printerStatus?.paperRemaining ?? 400) / (printerStatus?.paperRollCapacity || 400)) > 0.10
+                          ? 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
+                          : 'bg-red-100 text-red-800 border-red-300 animate-bounce'
+                      }`}>
+                        {((printerStatus?.paperRemaining ?? 400) / (printerStatus?.paperRollCapacity || 400)) > 0.25
+                          ? '🟢 ROLL AMAN'
+                          : ((printerStatus?.paperRemaining ?? 400) / (printerStatus?.paperRollCapacity || 400)) > 0.10
+                          ? '🟡 SIAPKAN ROLL'
+                          : '🔴 KRITIS (HABIS)'}
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Memantau konsumsi media kertas foto dye-sub (DNP / Citizen / HiTi) secara real-time
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-xs text-slate-500 font-mono-tech block">Total Cetak Hari Ini:</span>
+                    <span className="text-base font-black text-[#272a33] font-mono-tech">
+                      {printerStatus?.totalPrintsToday || 0} Lembar
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visual Paper Gauge */}
+                {(() => {
+                  const capacity = printerStatus?.paperRollCapacity || 400;
+                  const remaining = printerStatus?.paperRemaining ?? 400;
+                  const percent = Math.min(100, Math.max(0, Math.round((remaining / capacity) * 100)));
+                  const isLow = percent <= 25;
+                  const isCritical = percent <= 10;
+
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs font-bold">
+                        <span className="text-slate-700 flex items-center gap-1.5 font-mono-tech">
+                          <Layers className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Sisa Kertas: <strong>{remaining}</strong> dari {capacity} Lembar</span>
+                        </span>
+                        <span className={`font-mono-tech px-2 py-0.5 rounded text-xs font-black ${
+                          isCritical ? 'bg-red-100 text-red-700' : isLow ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          {percent}% Tersedia
+                        </span>
+                      </div>
+
+                      {/* Progress Bar Track */}
+                      <div className="w-full h-4 rounded-full bg-slate-100 border-2 border-[#272a33] overflow-hidden p-0.5 relative shadow-inner">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isCritical ? 'bg-gradient-to-r from-red-500 to-rose-600' : isLow ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-emerald-400 to-teal-500'
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Roll Reset Quick Buttons */}
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-xs font-bold text-slate-700 mb-2 block flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Pasang Roll Baru / Reset Counter Kertas:</span>
+                  </span>
+                  
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Pasang roll baru 400 lembar (DNP RX1HS)? Sisa kertas akan direset menjadi 400 lembar.')) {
+                          resetPaperRoll(400);
+                          setReprintFeedback('Roll baru 400 lembar berhasil dipasang!');
+                          setTimeout(() => setReprintFeedback(null), 3000);
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border-2 border-[#272a33] text-xs font-black text-[#272a33] shadow-[2px_2px_0px_#272a33] cursor-pointer transition-all active:scale-95"
+                    >
+                      🔄 Roll 400 Lembar (DNP)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Pasang roll baru 700 lembar (Citizen / HiTi)? Sisa kertas akan direset menjadi 700 lembar.')) {
+                          resetPaperRoll(700);
+                          setReprintFeedback('Roll baru 700 lembar berhasil dipasang!');
+                          setTimeout(() => setReprintFeedback(null), 3000);
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border-2 border-[#272a33] text-xs font-black text-[#272a33] shadow-[2px_2px_0px_#272a33] cursor-pointer transition-all active:scale-95"
+                    >
+                      🔄 Roll 700 Lembar (Citizen)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomRollModal(!showCustomRollModal)}
+                      className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-xs font-bold text-slate-700 cursor-pointer"
+                    >
+                      ⚙️ Custom Lembar...
+                    </button>
+                  </div>
+
+                  {showCustomRollModal && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder="Jumlah lembar baru (misal: 250)"
+                        value={customRollInput}
+                        onChange={e => setCustomRollInput(e.target.value)}
+                        className="w-48 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const num = Number(customRollInput);
+                          if (num > 0) {
+                            resetPaperRoll(num);
+                            setShowCustomRollModal(false);
+                            setCustomRollInput('');
+                            setReprintFeedback(`Kapasitas kertas berhasil diatur ke ${num} lembar!`);
+                            setTimeout(() => setReprintFeedback(null), 3000);
+                          }
+                        }}
+                        className="px-3.5 py-1.5 rounded-lg bg-[#272a33] text-white text-xs font-bold cursor-pointer"
+                      >
+                        Terapkan
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                  <Camera className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Sumber Kamera (DSLR / Capture Card / Webcam)</span>
-                </label>
-                <select
-                  value={formData.cameraDeviceId}
-                  onChange={e => setFormData({ ...formData, cameraDeviceId: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="">-- Gunakan Kamera Default Sistem --</option>
-                  {videoDevices.map((dev, idx) => (
-                    <option key={dev.deviceId || idx} value={dev.deviceId}>
-                      {dev.label || `Kamera ${idx + 1}`}
-                    </option>
-                  ))}
-                </select>
+              {/* ================= SECTION B: EMERGENCY OPERATOR REPRINT ================= */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2">
+                      <RotateCcw className="w-4 h-4 text-purple-600" />
+                      <span>Cetak Ulang Sesi Terakhir (Emergency Operator Reprint)</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold border border-purple-300">
+                        Crew Tool
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Cetak ulang foto sesi terakhir langsung tanpa perlu tamu mengulang sesi foto (solusi kertas macet / minta cetak ekstra)
+                    </p>
+                  </div>
+
+                  {reprintFeedback && (
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold font-mono-tech animate-pulse">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{reprintFeedback}</span>
+                    </div>
+                  )}
+                </div>
+
+                {printerStatus?.lastPrintedPhoto ? (
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 flex-wrap sm:flex-nowrap">
+                    {/* Thumbnail of Last Photo */}
+                    <div className="relative w-20 h-32 rounded-xl border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] overflow-hidden bg-white shrink-0 p-1 flex items-center justify-center">
+                      <img 
+                        src={printerStatus.lastPrintedPhoto} 
+                        alt="Last Printed" 
+                        className="w-full h-full object-contain rounded-lg"
+                      />
+                    </div>
+
+                    {/* Metadata & Reprint Actions */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <span className="text-xs font-bold text-[#272a33] block truncate">
+                          Frame: {printerStatus.lastPrintedFrameName || 'Default Frame'}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-mono-tech block">
+                          Dicetak pada: {printerStatus.lastPrintedDate || 'Baru Saja'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const success = reprintLastSession(1);
+                            if (success) {
+                              setReprintFeedback('Perintah Cetak Ulang (1 Lembar) Terkirim ke Printer!');
+                              setTimeout(() => setReprintFeedback(null), 3500);
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[2px_2px_0px_#fde047] text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Cetak Ulang 1 Lembar</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const success = reprintLastSession(2);
+                            if (success) {
+                              setReprintFeedback('Perintah Cetak Ulang (2 Lembar) Terkirim ke Printer!');
+                              setTimeout(() => setReprintFeedback(null), 3500);
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border-2 border-[#272a33] text-[#272a33] shadow-[2px_2px_0px_#272a33] text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Cetak 2 Lembar (Sepasang)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-center text-xs text-slate-500 font-medium">
+                    Belum ada sesi foto yang dicetak pada sesi event ini. Foto terakhir yang dicetak akan otomatis muncul di sini.
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* ================= SECTION C: CAMERA & SESSION PARAMETERS ================= */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Durasi Hitung Mundur</span>
-                  </label>
-                  <select
-                    value={formData.countdownSec}
-                    onChange={e => setFormData({ ...formData, countdownSec: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="3">3 Detik (Cepat / Antrean Ramai)</option>
-                    <option value="5">5 Detik (Standar Rekomendasi)</option>
-                    <option value="7">7 Detik (Santai / Grup Besar)</option>
-                  </select>
+                  <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2 mb-0.5">
+                    <Camera className="w-4 h-4 text-purple-600" />
+                    <span>Pengaturan Perangkat Kamera & Timer Sesi</span>
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Pilih perangkat kamera DSLR/Capture Card dan atur durasi timer hitung mundur
+                  </p>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Batas Foto Ulang (Retake)</span>
+                    <Camera className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Sumber Kamera (DSLR / Capture Card / Webcam)</span>
                   </label>
                   <select
-                    value={formData.maxRetakes ?? 2}
-                    onChange={e => setFormData({ ...formData, maxRetakes: e.target.value })}
+                    value={formData.cameraDeviceId}
+                    onChange={e => setFormData({ ...formData, cameraDeviceId: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   >
-                    <option value="0">0x (Tanpa Retake / Fast Queue)</option>
-                    <option value="1">1x Foto Ulang per Pose</option>
-                    <option value="2">2x Foto Ulang per Pose (Standar)</option>
+                    <option value="">-- Gunakan Kamera Default Sistem --</option>
+                    {videoDevices.map((dev, idx) => (
+                      <option key={dev.deviceId || idx} value={dev.deviceId}>
+                        {dev.label || `Kamera ${idx + 1}`}
+                      </option>
+                    ))}
                   </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Durasi Hitung Mundur</span>
+                    </label>
+                    <select
+                      value={formData.countdownSec}
+                      onChange={e => setFormData({ ...formData, countdownSec: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="3">3 Detik (Cepat / Antrean Ramai)</option>
+                      <option value="5">5 Detik (Standar Rekomendasi)</option>
+                      <option value="7">7 Detik (Santai / Grup Besar)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Batas Foto Ulang (Retake)</span>
+                    </label>
+                    <select
+                      value={formData.maxRetakes ?? 2}
+                      onChange={e => setFormData({ ...formData, maxRetakes: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="0">0x (Tanpa Retake / Fast Queue)</option>
+                      <option value="1">1x Foto Ulang per Pose</option>
+                      <option value="2">2x Foto Ulang per Pose (Standar)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                      <span>Durasi Live Motion Video</span>
+                    </label>
+                    <select
+                      value={formData.motionDurationSec ?? 4}
+                      onChange={e => setFormData({ ...formData, motionDurationSec: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="3">3 Detik</option>
+                      <option value="4">4 Detik (Standar HD)</option>
+                      <option value="5">5 Detik</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-                    <span>Durasi Live Motion Video</span>
+                    <Printer className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Nama Driver Printer Kiosk</span>
                   </label>
-                  <select
-                    value={formData.motionDurationSec ?? 4}
-                    onChange={e => setFormData({ ...formData, motionDurationSec: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="3">3 Detik</option>
-                    <option value="4">4 Detik (Standar HD)</option>
-                    <option value="5">5 Detik</option>
-                  </select>
+                  <input
+                    type="text"
+                    value={formData.printerName}
+                    onChange={e => setFormData({ ...formData, printerName: e.target.value })}
+                    placeholder="Contoh: DNP DS-RX1HS / Citizen CX-02"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                  <Printer className="w-3.5 h-3.5 text-pink-500" />
-                  <span>Nama Driver Printer Kiosk</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.printerName}
-                  onChange={e => setFormData({ ...formData, printerName: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-slate-200">
+              {/* Submit Save Button */}
+              <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-7 py-2.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[3px_3px_0px_#3b82f6] text-xs font-black flex items-center gap-2 cursor-pointer transition-all transform hover:scale-105 active:scale-95"
+                  className="px-7 py-3 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[4px_4px_0px_#3b82f6] text-xs font-black flex items-center gap-2 cursor-pointer transition-all transform hover:scale-105 active:scale-95"
                 >
                   <Save className="w-4 h-4 text-amber-300" />
-                  <span>Simpan Pengaturan Kamera</span>
+                  <span>Simpan Pengaturan Kamera & Printer</span>
                 </button>
               </div>
             </form>

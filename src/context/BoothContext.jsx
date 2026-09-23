@@ -106,6 +106,84 @@ export function BoothProvider({ children }) {
     }
   }, []);
 
+  // Printer & Consumables State
+  const [printerStatus, setPrinterStatus] = useState(() => {
+    try {
+      const saved = localStorage.getItem('snapbooth_printer_status_v1');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Cannot load printer status:', e);
+    }
+    return {
+      paperRollCapacity: 400,
+      paperRemaining: 400,
+      totalPrintsToday: 0,
+      totalPrintsFailed: 0,
+      lastPrintedPhoto: null,
+      lastPrintedDate: null,
+      lastPrintedFrameName: null
+    };
+  });
+
+  const savePrinterStatus = (updated) => {
+    setPrinterStatus(updated);
+    try {
+      localStorage.setItem('snapbooth_printer_status_v1', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Failed to persist printer status:', e);
+    }
+  };
+
+  // Record a successful print job
+  const recordSuccessfulPrint = (photoDataUrl, frameName, copies = 1) => {
+    setPrinterStatus(prev => {
+      const updated = {
+        ...prev,
+        paperRemaining: Math.max(0, (prev.paperRemaining ?? 400) - copies),
+        totalPrintsToday: (prev.totalPrintsToday || 0) + copies,
+        lastPrintedPhoto: photoDataUrl || prev.lastPrintedPhoto,
+        lastPrintedDate: new Date().toLocaleString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        lastPrintedFrameName: frameName || prev.lastPrintedFrameName
+      };
+      try {
+        localStorage.setItem('snapbooth_printer_status_v1', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  // Reset roll capacity (when operator installs new roll)
+  const resetPaperRoll = (newCapacity = 400) => {
+    const updated = {
+      ...printerStatus,
+      paperRollCapacity: Number(newCapacity) || 400,
+      paperRemaining: Number(newCapacity) || 400
+    };
+    savePrinterStatus(updated);
+  };
+
+  // Emergency Reprint Last Session (Operator)
+  const reprintLastSession = (copies = 1) => {
+    if (!printerStatus.lastPrintedPhoto) return false;
+    setIsPrinting(true);
+    sounds.playPrintSound();
+
+    recordSuccessfulPrint(printerStatus.lastPrintedPhoto, printerStatus.lastPrintedFrameName, copies);
+
+    setTimeout(() => {
+      setIsPrinting(false);
+      sounds.playSuccessChime();
+    }, 4500);
+    return true;
+  };
+
   // Save settings when modified
   const updateSettings = (newSettings) => {
     const merged = { ...eventSettings, ...newSettings };
@@ -284,9 +362,13 @@ export function BoothProvider({ children }) {
   };
 
   // Trigger Print
-  const handleTriggerPrint = () => {
+  const handleTriggerPrint = (copies = 1) => {
     setIsPrinting(true);
     sounds.playPrintSound();
+
+    if (finalRenderedPhoto) {
+      recordSuccessfulPrint(finalRenderedPhoto, selectedFrame?.name, copies);
+    }
 
     setTimeout(() => {
       setIsPrinting(false);
@@ -333,6 +415,10 @@ export function BoothProvider({ children }) {
         setIsAdminOpen,
         viewingSoftfileId,
         setViewingSoftfileId,
+        printerStatus,
+        recordSuccessfulPrint,
+        resetPaperRoll,
+        reprintLastSession,
         startNewSession,
         handlePaymentSuccess,
         handleSelectFrame,

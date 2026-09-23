@@ -10,7 +10,8 @@ import {
   CheckCircle2, 
   Share2, 
   ExternalLink,
-  Check
+  Check,
+  AlertTriangle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -22,7 +23,8 @@ export default function PrintAndShareScreen() {
     isPrinting, 
     handleTriggerPrint, 
     resetToAttract,
-    setViewingSoftfileId
+    setViewingSoftfileId,
+    printerStatus
   } = useBooth();
 
   const initialDelay = (!eventSettings.autoResetDelaySec || eventSettings.autoResetDelaySec === 45) 
@@ -71,6 +73,8 @@ export default function PrintAndShareScreen() {
 
     return () => clearInterval(timer);
   }, [resetToAttract]);
+
+  const isLowPaper = (printerStatus?.paperRemaining ?? 400) <= 20;
 
   return (
     <div className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-8 bg-grid-notebook text-slate-900 overflow-hidden select-none">
@@ -131,8 +135,16 @@ export default function PrintAndShareScreen() {
           </div>
         </div>
 
-        {/* Auto Reset Timer Badge & Page Badge */}
-        <div className="flex items-center gap-3">
+        {/* Auto Reset Timer Badge, Low Paper Warning, & Page Badge */}
+        <div className="flex items-center gap-2.5">
+          {/* Low Paper Warning for Crew */}
+          {isLowPaper && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold font-mono-tech shadow-sm">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+              <span>Sisa Kertas: {printerStatus?.paperRemaining ?? 0} lbr</span>
+            </div>
+          )}
+
           <div className="px-4 py-2 rounded-full bg-white text-[#272a33] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] flex items-center gap-2 text-xs font-bold font-mono-tech whitespace-nowrap shrink-0">
             <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span className="whitespace-nowrap">Sisa Waktu: {autoResetSeconds}s</span>
