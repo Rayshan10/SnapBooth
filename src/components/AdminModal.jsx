@@ -30,7 +30,14 @@ import {
   Type,
   AlertTriangle,
   CheckCircle2,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Coins,
+  Users,
+  Copy,
+  BarChart3,
+  Receipt,
+  FileText
 } from 'lucide-react';
 
 // Compress image to ensure it fits comfortably within storage quota
@@ -74,7 +81,9 @@ export default function AdminModal() {
     exportMasterEventZip,
     printerStatus,
     resetPaperRoll,
-    reprintLastSession
+    reprintLastSession,
+    eventAnalytics,
+    resetEventAnalytics
   } = useBooth();
 
   const [activeTab, setActiveTab] = useState('frames'); // 'frames' | 'event' | 'camera' | 'payment' | 'export'
@@ -85,6 +94,41 @@ export default function AdminModal() {
   const [reprintFeedback, setReprintFeedback] = useState(null);
   const [customRollInput, setCustomRollInput] = useState('');
   const [showCustomRollModal, setShowCustomRollModal] = useState(false);
+  const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+
+  // Copy WhatsApp Summary Report
+  const handleCopyWhatsAppReport = () => {
+    const totalRev = Number(eventAnalytics?.totalRevenue || 0).toLocaleString('id-ID');
+    const totalSess = eventAnalytics?.sessionsCount || 0;
+    const paidSess = eventAnalytics?.paidSessionsCount || 0;
+    const freeSess = eventAnalytics?.freeSessionsCount || 0;
+    const printsToday = printerStatus?.totalPrintsToday || 0;
+    const paperLeft = printerStatus?.paperRemaining ?? 400;
+
+    const frameStats = eventAnalytics?.frameStats || {};
+    const sortedFrames = Object.entries(frameStats).sort((a, b) => b[1] - a[1]);
+    const topFrameText = sortedFrames.length > 0 
+      ? sortedFrames.map(([name, count]) => `  • ${name}: ${count}x`).join('\n')
+      : '  • Belum ada sesi';
+
+    const text = `📊 *LAPORAN REKAP SNAPBOOTH KIOSK*
+🎉 *Event:* ${eventSettings.title || 'SnapBooth Event'}
+📍 *Lokasi:* ${eventSettings.location || 'Venue Event'}
+📅 *Tanggal:* ${eventSettings.date || new Date().toLocaleDateString('id-ID')}
+------------------------------------------
+💰 *Total Omset QRIS:* Rp ${totalRev}
+📸 *Total Sesi Foto:* ${totalSess} Sesi (${paidSess} Berbayar, ${freeSess} Free)
+🖨️ *Total Kertas Tercetak:* ${printsToday} Lembar (Sisa ${paperLeft} lbr)
+🏆 *Ranking Frame Terfavorit:*
+${topFrameText}
+------------------------------------------
+⚡ *Status Sistem:* Normal & Operasional
+_Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
+
+    navigator.clipboard.writeText(text);
+    setCopiedWhatsApp(true);
+    setTimeout(() => setCopiedWhatsApp(false), 3000);
+  };
 
   // New Custom Frame Form State
   const [isAddingFrame, setIsAddingFrame] = useState(false);
@@ -1398,30 +1442,287 @@ export default function AdminModal() {
             </form>
           )}
 
-          {/* ----------------- TAB 5: MASTER GALLERY & BULK EXPORT ----------------- */}
+          {/* ----------------- TAB 5: STATISTIK, OMSET & MASTER EXPORT ----------------- */}
           {activeTab === 'export' && (
             <div className="space-y-6">
-              <div>
-                <h4 className="font-extrabold text-base text-[#272a33] flex items-center gap-2 mb-1">
-                  <FolderArchive className="w-5 h-5 text-indigo-600" />
-                  <span>Master Galeri & Rekapitulasi Event</span>
-                </h4>
-                <p className="text-xs text-slate-500">
-                  Download seluruh hasil foto dan softfile yang diambil selama acara berlangsung dalam 1 file ZIP untuk diserahkan ke panitia
-                </p>
+              {/* Header with Quick Actions */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-200">
+                <div>
+                  <h4 className="font-extrabold text-base text-[#272a33] flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-indigo-600" />
+                    <span>Dashboard Statistik & Omset Event</span>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold border border-indigo-300">
+                      LIVE REPORT
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Rangkuman data sesi foto, pendapatan QRIS, frame terlaris, dan ekspor dokumentasi event
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Copy WhatsApp Summary Button */}
+                  <button
+                    type="button"
+                    onClick={handleCopyWhatsAppReport}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#272a33] active:scale-95 ${
+                      copiedWhatsApp 
+                        ? 'bg-emerald-500 text-white border-[#272a33]' 
+                        : 'bg-[#25D366] text-white hover:bg-[#20bd5a] border-[#272a33]'
+                    }`}
+                  >
+                    {copiedWhatsApp ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedWhatsApp ? 'Laporan Tersalin!' : 'Salin Laporan WhatsApp'}</span>
+                  </button>
+
+                  {/* Reset Analytics Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Apakah Anda yakin ingin mereset statistik sesi untuk memulai event baru? Data sesi sebelumnya akan dikosongkan.')) {
+                        resetEventAnalytics();
+                      }
+                    }}
+                    className="px-3 py-2 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 flex items-center gap-1 cursor-pointer transition-all"
+                    title="Reset Statistik Event"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Reset Data</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Export Hero Card */}
+              {/* ================= 4 KPI METRIC CARDS ================= */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* 1. Total Omset QRIS */}
+                <div className="p-4 rounded-2xl bg-white border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] space-y-1">
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span className="text-[11px] font-bold font-mono-tech">TOTAL OMSET QRIS</span>
+                    <Coins className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="text-xl font-black text-emerald-600 font-display tracking-tight truncate">
+                    Rp {Number(eventAnalytics?.totalRevenue || 0).toLocaleString('id-ID')}
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium truncate">
+                    {eventAnalytics?.paidSessionsCount || 0} Sesi Berbayar
+                  </p>
+                </div>
+
+                {/* 2. Total Sesi Selesai */}
+                <div className="p-4 rounded-2xl bg-white border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] space-y-1">
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span className="text-[11px] font-bold font-mono-tech">TOTAL SESI FOTO</span>
+                    <Users className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="text-xl font-black text-[#272a33] font-display tracking-tight">
+                    {eventAnalytics?.sessionsCount || 0} <span className="text-xs font-bold text-slate-500 font-mono-tech">Sesi</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium truncate">
+                    {eventAnalytics?.freeSessionsCount || 0} Free • {eventAnalytics?.paidSessionsCount || 0} Paid
+                  </p>
+                </div>
+
+                {/* 3. Kertas Tercetak */}
+                <div className="p-4 rounded-2xl bg-white border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] space-y-1">
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span className="text-[11px] font-bold font-mono-tech">KERTAS TERCETAK</span>
+                    <Printer className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div className="text-xl font-black text-[#272a33] font-display tracking-tight">
+                    {printerStatus?.totalPrintsToday || 0} <span className="text-xs font-bold text-slate-500 font-mono-tech">Lembar</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium truncate">
+                    Sisa {printerStatus?.paperRemaining ?? 400} lbr di roll
+                  </p>
+                </div>
+
+                {/* 4. Rata-Rata Kecepatan Sesi */}
+                <div className="p-4 rounded-2xl bg-white border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] space-y-1">
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span className="text-[11px] font-bold font-mono-tech">ESTIMASI DURASI</span>
+                    <Clock className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="text-xl font-black text-[#272a33] font-display tracking-tight">
+                    ~1.5 <span className="text-xs font-bold text-slate-500 font-mono-tech">Menit</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium truncate">
+                    Flow Cepat & Antrean Lancar
+                  </p>
+                </div>
+              </div>
+
+              {/* ================= 2 ANALYTICS GRIDS: FRAMES & FILTERS ================= */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Panel A: Frame Leaderboard */}
+                <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-3">
+                  <h5 className="font-black text-xs text-[#272a33] uppercase flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-blue-600" />
+                    <span>Ranking Desain Frame Terfavorit</span>
+                  </h5>
+
+                  {(() => {
+                    const frameStats = eventAnalytics?.frameStats || {};
+                    const entries = Object.entries(frameStats).sort((a, b) => b[1] - a[1]);
+                    const totalCount = eventAnalytics?.sessionsCount || 1;
+
+                    if (entries.length === 0) {
+                      return (
+                        <div className="p-4 rounded-xl bg-slate-50 text-center text-xs text-slate-500 font-medium">
+                          Belum ada sesi foto yang tercatat.
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-2.5">
+                        {entries.map(([name, count], idx) => {
+                          const percent = Math.round((count / totalCount) * 100);
+                          const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '•';
+                          return (
+                            <div key={name} className="space-y-1">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="font-bold text-slate-800 truncate max-w-[200px]">
+                                  {medal} {name}
+                                </span>
+                                <span className="font-mono-tech text-[11px] text-slate-600 font-bold">
+                                  {count}x ({percent}%)
+                                </span>
+                              </div>
+                              <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                                <div 
+                                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600" 
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Panel B: Filter Breakdown */}
+                <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-3">
+                  <h5 className="font-black text-xs text-[#272a33] uppercase flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-pink-500" />
+                    <span>Filter Foto Yang Sering Dipilih</span>
+                  </h5>
+
+                  {(() => {
+                    const filterStats = eventAnalytics?.filterStats || {};
+                    const entries = Object.entries(filterStats).sort((a, b) => b[1] - a[1]);
+                    const totalCount = eventAnalytics?.sessionsCount || 1;
+
+                    if (entries.length === 0) {
+                      return (
+                        <div className="p-4 rounded-xl bg-slate-50 text-center text-xs text-slate-500 font-medium">
+                          Belum ada data pilihan filter tamu.
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-2.5">
+                        {entries.map(([id, count]) => {
+                          const percent = Math.round((count / totalCount) * 100);
+                          const formattedName = id.replace(/[-_]/g, ' ').toUpperCase();
+                          return (
+                            <div key={id} className="space-y-1">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="font-bold text-slate-800">
+                                  ✨ {formattedName}
+                                </span>
+                                <span className="font-mono-tech text-[11px] text-slate-600 font-bold">
+                                  {count}x ({percent}%)
+                                </span>
+                              </div>
+                              <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                                <div 
+                                  className="h-full rounded-full bg-gradient-to-r from-pink-500 to-purple-600" 
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* ================= RECENT TRANSACTIONS / SESSION LOGS ================= */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-3">
+                <div className="flex justify-between items-center">
+                  <h5 className="font-black text-xs text-[#272a33] uppercase flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-emerald-600" />
+                    <span>Riwayat Sesi Foto Terakhir</span>
+                  </h5>
+                  <span className="text-[10px] text-slate-500 font-mono-tech">
+                    Menampilkan 10 sesi terbaru
+                  </span>
+                </div>
+
+                {eventAnalytics?.sessionLogs?.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b-2 border-slate-200 text-slate-500 font-mono-tech">
+                          <th className="pb-2 font-bold">Waktu</th>
+                          <th className="pb-2 font-bold">Desain Frame</th>
+                          <th className="pb-2 font-bold">Filter</th>
+                          <th className="pb-2 font-bold">Mode</th>
+                          <th className="pb-2 font-bold text-right">Tarif</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {eventAnalytics.sessionLogs.slice(0, 10).map((log) => (
+                          <tr key={log.id} className="hover:bg-slate-50">
+                            <td className="py-2.5 text-slate-600 font-mono-tech">
+                              {log.timestamp} • {log.date}
+                            </td>
+                            <td className="py-2.5 font-bold text-[#272a33]">
+                              {log.frameName}
+                            </td>
+                            <td className="py-2.5 text-slate-600">
+                              {log.filterId}
+                            </td>
+                            <td className="py-2.5">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                log.isPaid
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  : 'bg-amber-100 text-amber-800 border-amber-300'
+                              }`}>
+                                {log.isPaid ? 'QRIS PAID' : 'FREE EVENT'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 text-right font-bold text-[#272a33] font-mono-tech">
+                              {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'Gratis'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-50 text-center text-xs text-slate-500 font-medium">
+                    Belum ada riwayat sesi foto hari ini.
+                  </div>
+                )}
+              </div>
+
+              {/* ================= MASTER ZIP EVENT EXPORT CARD ================= */}
               <div className="p-6 rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] flex flex-col md:flex-row items-center justify-between gap-5">
                 <div className="space-y-1 text-center md:text-left">
-                  <span className="text-xs font-mono-tech font-bold text-blue-600 uppercase tracking-wider">
-                    DOKUMENTASI LENGKAP EVENT
+                  <span className="text-xs font-mono-tech font-bold text-indigo-600 uppercase tracking-wider">
+                    ARSIP DOKUMENTASI LENGKAP
                   </span>
                   <h4 className="text-lg font-black text-[#272a33] font-display">
-                    Export Semua Sesi Foto Acara (Master ZIP)
+                    Download Semua File Foto Acara (Master ZIP)
                   </h4>
                   <p className="text-xs text-slate-600 max-w-md">
-                    Mengemas seluruh Photo Strip HD, Pose Satuan, dan GIF animasi dari setiap tamu ke dalam folder rapi per sesi.
+                    Ekspor seluruh Photo Strip HD, Pose Satuan, dan GIF animasi dari setiap tamu dalam 1 file ZIP untuk diserahkan ke panitia/klien.
                   </p>
                 </div>
 

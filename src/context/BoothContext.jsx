@@ -169,6 +169,99 @@ export function BoothProvider({ children }) {
     savePrinterStatus(updated);
   };
 
+  // Event Sessions & Financial Analytics State
+  const [eventAnalytics, setEventAnalytics] = useState(() => {
+    try {
+      const saved = localStorage.getItem('snapbooth_event_analytics_v1');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Cannot load event analytics:', e);
+    }
+    return {
+      sessionsCount: 0,
+      totalRevenue: 0,
+      paidSessionsCount: 0,
+      freeSessionsCount: 0,
+      frameStats: {}, // { [frameName]: count }
+      filterStats: {}, // { [filterId]: count }
+      sessionLogs: [] // [ { id, timestamp, date, frameName, filterId, amount, isPaid, posesCount } ]
+    };
+  });
+
+  const saveEventAnalytics = (updated) => {
+    setEventAnalytics(updated);
+    try {
+      localStorage.setItem('snapbooth_event_analytics_v1', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Failed to persist analytics:', e);
+    }
+  };
+
+  // Record a completed photo session
+  const recordCompletedSession = ({ frameName, filterId, isPaid, price, posesCount }) => {
+    setEventAnalytics(prev => {
+      const isPaidMode = isPaid ?? (eventSettings.eventMode === 'paid');
+      const sessionPrice = isPaidMode ? (Number(price || eventSettings.price) || 0) : 0;
+      const frameKey = frameName || 'Standard Frame';
+      const filterKey = filterId || 'normal';
+
+      const newFrameStats = {
+        ...prev.frameStats,
+        [frameKey]: (prev.frameStats?.[frameKey] || 0) + 1
+      };
+
+      const newFilterStats = {
+        ...prev.filterStats,
+        [filterKey]: (prev.filterStats?.[filterKey] || 0) + 1
+      };
+
+      const newLog = {
+        id: 'sess_' + Date.now().toString(36),
+        timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+        frameName: frameKey,
+        filterId: filterKey,
+        amount: sessionPrice,
+        isPaid: isPaidMode,
+        posesCount: posesCount || 3
+      };
+
+      const updatedLogs = [newLog, ...(prev.sessionLogs || [])].slice(0, 100);
+
+      const updated = {
+        sessionsCount: (prev.sessionsCount || 0) + 1,
+        totalRevenue: (prev.totalRevenue || 0) + sessionPrice,
+        paidSessionsCount: (prev.paidSessionsCount || 0) + (isPaidMode ? 1 : 0),
+        freeSessionsCount: (prev.freeSessionsCount || 0) + (isPaidMode ? 0 : 1),
+        frameStats: newFrameStats,
+        filterStats: newFilterStats,
+        sessionLogs: updatedLogs
+      };
+
+      try {
+        localStorage.setItem('snapbooth_event_analytics_v1', JSON.stringify(updated));
+      } catch (e) {}
+
+      return updated;
+    });
+  };
+
+  // Reset event analytics data (for fresh event)
+  const resetEventAnalytics = () => {
+    const empty = {
+      sessionsCount: 0,
+      totalRevenue: 0,
+      paidSessionsCount: 0,
+      freeSessionsCount: 0,
+      frameStats: {},
+      filterStats: {},
+      sessionLogs: []
+    };
+    saveEventAnalytics(empty);
+  };
+
   // Emergency Reprint Last Session (Operator)
   const reprintLastSession = (copies = 1) => {
     if (!printerStatus.lastPrintedPhoto) return false;
@@ -355,6 +448,15 @@ export function BoothProvider({ children }) {
       });
       setSoftfileInfo(softfileData);
 
+      // 6. Record Session to Analytics
+      recordCompletedSession({
+        frameName: selectedFrame?.name || 'Standard Frame',
+        filterId,
+        isPaid: eventSettings.eventMode === 'paid',
+        price: eventSettings.price,
+        posesCount: selectedFrame?.poses
+      });
+
       setStep(STEPS.PRINT_SHARE);
     } catch (err) {
       console.error('Error rendering photo package:', err);
@@ -419,6 +521,9 @@ export function BoothProvider({ children }) {
         recordSuccessfulPrint,
         resetPaperRoll,
         reprintLastSession,
+        eventAnalytics,
+        recordCompletedSession,
+        resetEventAnalytics,
         startNewSession,
         handlePaymentSuccess,
         handleSelectFrame,
