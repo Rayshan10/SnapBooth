@@ -186,7 +186,7 @@ export function BoothProvider({ children }) {
       freeSessionsCount: 0,
       frameStats: {}, // { [frameName]: count }
       filterStats: {}, // { [filterId]: count }
-      sessionLogs: [] // [ { id, timestamp, date, frameName, filterId, amount, isPaid, posesCount } ]
+      sessionLogs: [] // [ { id, timestamp, date, frameName, filterId, amount, isPaid, posesCount, voucherCode, discountAmount } ]
     };
   });
 
@@ -199,11 +199,204 @@ export function BoothProvider({ children }) {
     }
   };
 
+  // ================= VOUCHER & VIP COUPON SYSTEM =================
+  const [vouchers, setVouchers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('snapbooth_vouchers_v1');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Cannot load vouchers:', e);
+    }
+    return [
+      {
+        id: 'vch_vip_default',
+        code: 'VIPFREE',
+        type: 'free', // 'free' | 'percentage' | 'nominal'
+        discountValue: 100,
+        maxUses: -1, // -1 = unlimited
+        usedCount: 0,
+        description: 'Tamu VIP / Sponsor (100% Gratis)',
+        active: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'vch_panitia_default',
+        code: 'PANITIA',
+        type: 'free',
+        discountValue: 100,
+        maxUses: 50,
+        usedCount: 0,
+        description: 'Panitia Acara & Crew',
+        active: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'vch_promo50_default',
+        code: 'PROMO50',
+        type: 'percentage',
+        discountValue: 50,
+        maxUses: 20,
+        usedCount: 0,
+        description: 'Diskon 50% Promo Event',
+        active: true,
+        createdAt: new Date().toISOString()
+      }
+    ];
+  });
+
+  const saveVouchers = (updatedList) => {
+    setVouchers(updatedList);
+    try {
+      localStorage.setItem('snapbooth_vouchers_v1', JSON.stringify(updatedList));
+    } catch (e) {
+      console.warn('Failed to persist vouchers:', e);
+    }
+  };
+
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+
+  // Add a new voucher
+  const addVoucher = ({ code, type = 'free', discountValue = 100, maxUses = -1, description = '' }) => {
+    const cleanCode = (code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    if (!cleanCode) return { success: false, message: 'Kode voucher tidak boleh kosong.' };
+
+    const exists = vouchers.some(v => v.code.toUpperCase() === cleanCode);
+    if (exists) return { success: false, message: `Kode voucher "${cleanCode}" sudah ada.` };
+
+    const newVoucher = {
+      id: 'vch_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6),
+      code: cleanCode,
+      type, // 'free' | 'percentage' | 'nominal'
+      discountValue: Number(discountValue) || 0,
+      maxUses: Number(maxUses),
+      usedCount: 0,
+      description: description.trim() || (type === 'free' ? 'Voucher Gratis VIP' : `Diskon ${discountValue}`),
+      active: true,
+      createdAt: new Date().toISOString()
+    };
+
+    const updated = [newVoucher, ...vouchers];
+    saveVouchers(updated);
+    return { success: true, voucher: newVoucher };
+  };
+
+  // Delete a voucher
+  const deleteVoucher = (id) => {
+    const updated = vouchers.filter(v => v.id !== id);
+    saveVouchers(updated);
+  };
+
+  // Toggle voucher active state
+  const toggleVoucherActive = (id) => {
+    const updated = vouchers.map(v => {
+      if (v.id === id) {
+        return { ...v, active: !v.active };
+      }
+      return v;
+    });
+    saveVouchers(updated);
+  };
+
+  // Generate bulk random VIP vouchers (e.g. 5 or 10 single-use codes)
+  const generateBulkRandomVouchers = ({ prefix = 'VIP', count = 5, type = 'free', discountValue = 100, maxUses = 1, description = 'Kupon VIP Sekali Pakai' }) => {
+    const generated = [];
+    const currentCodes = new Set(vouchers.map(v => v.code.toUpperCase()));
+
+    for (let i = 0; i < count; i++) {
+      let randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+      let newCode = `${prefix.trim().toUpperCase()}-${randomPart}`;
+      while (currentCodes.has(newCode)) {
+        randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+        newCode = `${prefix.trim().toUpperCase()}-${randomPart}`;
+      }
+      currentCodes.add(newCode);
+
+      generated.push({
+        id: 'vch_' + Date.now().toString(36) + '_' + i + '_' + Math.random().toString(36).substring(2, 6),
+        code: newCode,
+        type,
+        discountValue: Number(discountValue) || 100,
+        maxUses: Number(maxUses) || 1,
+        usedCount: 0,
+        description,
+        active: true,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    const updated = [...generated, ...vouchers];
+    saveVouchers(updated);
+    return generated;
+  };
+
+  // Validate and apply voucher in payment screen
+  const validateAndApplyVoucher = (inputCode, basePrice = eventSettings.price) => {
+    const clean = (inputCode || '').trim().toUpperCase();
+    if (!clean) {
+      return { success: false, message: 'Masukkan kode voucher terlebih dahulu.' };
+    }
+
+    const found = vouchers.find(v => v.code.toUpperCase() === clean);
+    if (!found) {
+      return { success: false, message: 'Kode voucher tidak ditemukan / salah.' };
+    }
+
+    if (!found.active) {
+      return { success: false, message: 'Voucher ini saat ini sedang dinonaktifkan oleh panitia.' };
+    }
+
+    if (found.maxUses > 0 && found.usedCount >= found.maxUses) {
+      return { success: false, message: `Voucher "${clean}" sudah mencapai batas kuota pemakaian (${found.maxUses}x).` };
+    }
+
+    const originalPrice = Number(basePrice) || 0;
+    let discountAmount = 0;
+    let finalPrice = originalPrice;
+    let isFree = false;
+
+    if (found.type === 'free') {
+      discountAmount = originalPrice;
+      finalPrice = 0;
+      isFree = true;
+    } else if (found.type === 'percentage') {
+      const pct = Math.min(100, Math.max(0, Number(found.discountValue) || 0));
+      discountAmount = Math.round(originalPrice * (pct / 100));
+      finalPrice = Math.max(0, originalPrice - discountAmount);
+      isFree = finalPrice === 0;
+    } else if (found.type === 'nominal') {
+      discountAmount = Math.min(originalPrice, Math.max(0, Number(found.discountValue) || 0));
+      finalPrice = Math.max(0, originalPrice - discountAmount);
+      isFree = finalPrice === 0;
+    }
+
+    const voucherApplication = {
+      voucherId: found.id,
+      code: found.code,
+      type: found.type,
+      discountValue: found.discountValue,
+      discountAmount,
+      originalPrice,
+      finalPrice,
+      isFree,
+      description: found.description
+    };
+
+    setAppliedVoucher(voucherApplication);
+    sounds.playSuccessChime();
+    return { success: true, voucher: voucherApplication };
+  };
+
+  const removeAppliedVoucher = () => {
+    setAppliedVoucher(null);
+  };
+
   // Record a completed photo session
-  const recordCompletedSession = ({ frameName, filterId, isPaid, price, posesCount }) => {
+  const recordCompletedSession = ({ frameName, filterId, isPaid, price, posesCount, voucherCode, discountAmount }) => {
     setEventAnalytics(prev => {
       const isPaidMode = isPaid ?? (eventSettings.eventMode === 'paid');
-      const sessionPrice = isPaidMode ? (Number(price || eventSettings.price) || 0) : 0;
+      const sessionPrice = isPaidMode ? (Number(price !== undefined ? price : eventSettings.price) || 0) : 0;
       const frameKey = frameName || 'Standard Frame';
       const filterKey = filterId || 'normal';
 
@@ -224,8 +417,10 @@ export function BoothProvider({ children }) {
         frameName: frameKey,
         filterId: filterKey,
         amount: sessionPrice,
-        isPaid: isPaidMode,
-        posesCount: posesCount || 3
+        isPaid: isPaidMode && sessionPrice > 0,
+        posesCount: posesCount || 3,
+        voucherCode: voucherCode || null,
+        discountAmount: discountAmount || 0
       };
 
       const updatedLogs = [newLog, ...(prev.sessionLogs || [])].slice(0, 100);
@@ -233,8 +428,8 @@ export function BoothProvider({ children }) {
       const updated = {
         sessionsCount: (prev.sessionsCount || 0) + 1,
         totalRevenue: (prev.totalRevenue || 0) + sessionPrice,
-        paidSessionsCount: (prev.paidSessionsCount || 0) + (isPaidMode ? 1 : 0),
-        freeSessionsCount: (prev.freeSessionsCount || 0) + (isPaidMode ? 0 : 1),
+        paidSessionsCount: (prev.paidSessionsCount || 0) + ((isPaidMode && sessionPrice > 0) ? 1 : 0),
+        freeSessionsCount: (prev.freeSessionsCount || 0) + ((!isPaidMode || sessionPrice === 0) ? 1 : 0),
         frameStats: newFrameStats,
         filterStats: newFilterStats,
         sessionLogs: updatedLogs
@@ -315,6 +510,7 @@ export function BoothProvider({ children }) {
     setIsPrinting(false);
 
     // If Event Mode is Free, jump directly to Frame Selection Screen
+    setAppliedVoucher(null);
     if (eventSettings.eventMode === 'free') {
       setStep(STEPS.FRAME_SELECT);
     } else {
@@ -448,13 +644,35 @@ export function BoothProvider({ children }) {
       });
       setSoftfileInfo(softfileData);
 
-      // 6. Record Session to Analytics
+      // 6. Increment Voucher Usage if applied
+      if (appliedVoucher?.voucherId) {
+        setVouchers(prev => {
+          const updated = prev.map(v => {
+            if (v.id === appliedVoucher.voucherId || v.code.toUpperCase() === appliedVoucher.code.toUpperCase()) {
+              return { ...v, usedCount: (v.usedCount || 0) + 1 };
+            }
+            return v;
+          });
+          try {
+            localStorage.setItem('snapbooth_vouchers_v1', JSON.stringify(updated));
+          } catch (e) {}
+          return updated;
+        });
+      }
+
+      // 7. Record Session to Analytics
+      const isPaidMode = eventSettings.eventMode === 'paid';
+      const effectivePrice = appliedVoucher ? appliedVoucher.finalPrice : eventSettings.price;
+      const effectiveIsPaid = isPaidMode && (!appliedVoucher || !appliedVoucher.isFree);
+
       recordCompletedSession({
         frameName: selectedFrame?.name || 'Standard Frame',
         filterId,
-        isPaid: eventSettings.eventMode === 'paid',
-        price: eventSettings.price,
-        posesCount: selectedFrame?.poses
+        isPaid: effectiveIsPaid,
+        price: effectivePrice,
+        posesCount: selectedFrame?.poses,
+        voucherCode: appliedVoucher?.code || null,
+        discountAmount: appliedVoucher?.discountAmount || 0
       });
 
       setStep(STEPS.PRINT_SHARE);
@@ -488,6 +706,7 @@ export function BoothProvider({ children }) {
     setFinalRenderedPhoto(null);
     setSoftfileInfo(null);
     setIsPrinting(false);
+    setAppliedVoucher(null);
   };
 
   return (
@@ -524,6 +743,14 @@ export function BoothProvider({ children }) {
         eventAnalytics,
         recordCompletedSession,
         resetEventAnalytics,
+        vouchers,
+        appliedVoucher,
+        addVoucher,
+        deleteVoucher,
+        toggleVoucherActive,
+        generateBulkRandomVouchers,
+        validateAndApplyVoucher,
+        removeAppliedVoucher,
         startNewSession,
         handlePaymentSuccess,
         handleSelectFrame,

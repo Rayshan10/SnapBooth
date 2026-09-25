@@ -37,7 +37,12 @@ import {
   Copy,
   BarChart3,
   Receipt,
-  FileText
+  FileText,
+  Ticket,
+  Crown,
+  Gift,
+  Tag,
+  Zap
 } from 'lucide-react';
 
 // Compress image to ensure it fits comfortably within storage quota
@@ -83,7 +88,12 @@ export default function AdminModal() {
     resetPaperRoll,
     reprintLastSession,
     eventAnalytics,
-    resetEventAnalytics
+    resetEventAnalytics,
+    vouchers,
+    addVoucher,
+    deleteVoucher,
+    toggleVoucherActive,
+    generateBulkRandomVouchers
   } = useBooth();
 
   const [activeTab, setActiveTab] = useState('frames'); // 'frames' | 'event' | 'camera' | 'payment' | 'export'
@@ -95,6 +105,22 @@ export default function AdminModal() {
   const [customRollInput, setCustomRollInput] = useState('');
   const [showCustomRollModal, setShowCustomRollModal] = useState(false);
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+
+  // Voucher Form States
+  const [isAddingVoucher, setIsAddingVoucher] = useState(false);
+  const [newVoucherForm, setNewVoucherForm] = useState({
+    code: '',
+    type: 'free',
+    discountValue: 100,
+    maxUses: -1,
+    description: ''
+  });
+  const [voucherFormError, setVoucherFormError] = useState('');
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkPrefix, setBulkPrefix] = useState('VIP');
+  const [bulkCount, setBulkCount] = useState(5);
+  const [bulkGeneratedList, setBulkGeneratedList] = useState([]);
+  const [copiedBulk, setCopiedBulk] = useState(false);
 
   // Copy WhatsApp Summary Report
   const handleCopyWhatsAppReport = () => {
@@ -339,8 +365,8 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
             { id: 'frames', label: '🎨 Kelola Frame', icon: Layers },
             { id: 'event', label: '⚙️ Info Event', icon: Sparkles },
             { id: 'camera', label: '📷 Kamera & 🖨️ Printer', icon: Camera },
-            { id: 'payment', label: '💳 Mode Acara', icon: DollarSign },
-            { id: 'export', label: '📊 Master Galeri', icon: FolderArchive }
+            { id: 'payment', label: '💳 Pembayaran & Voucher', icon: DollarSign },
+            { id: 'export', label: '📊 Statistik & Laporan', icon: BarChart3 }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1355,91 +1381,469 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
             </form>
           )}
 
-          {/* ----------------- TAB 4: PAYMENT & EVENT ACCESS ----------------- */}
+          {/* ----------------- TAB 4: PAYMENT & VOUCHER ACCESS ----------------- */}
           {activeTab === 'payment' && (
-            <form onSubmit={handleSaveSettings} className="space-y-5">
-              <div>
-                <h4 className="font-extrabold text-base text-[#272a33] flex items-center gap-2 mb-1">
-                  <DollarSign className="w-5 h-5 text-emerald-600" />
-                  <span>Mode Operasional & Pembayaran</span>
-                </h4>
-                <p className="text-xs text-slate-500 mb-4">
-                  Tentukan apakah photo booth berjalan gratis untuk acara khusus atau berbayar per sesi
-                </p>
-              </div>
+            <div className="space-y-6">
+              {/* Part 1: Operational Mode & Price */}
+              <form onSubmit={handleSaveSettings} className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
+                <div>
+                  <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2 mb-0.5">
+                    <DollarSign className="w-4 h-4 text-emerald-600" />
+                    <span>Mode Operasional & Tarif Sesi</span>
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Tentukan apakah photo booth berjalan gratis untuk acara sewa/wedding atau berbayar per sesi
+                  </p>
+                </div>
 
-              {/* Mode Selector Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div
-                  onClick={() => setFormData({ ...formData, eventMode: 'free' })}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3.5 ${
-                    formData.eventMode === 'free'
-                      ? 'border-[#272a33] bg-[#fef08a]/40 shadow-[4px_4px_0px_#272a33] ring-2 ring-[#272a33]'
-                      : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="p-2.5 rounded-xl bg-amber-400 text-[#272a33] border border-[#272a33]">
-                    <Sparkles className="w-5 h-5" />
+                {/* Mode Selector Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div
+                    onClick={() => setFormData({ ...formData, eventMode: 'free' })}
+                    className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                      formData.eventMode === 'free'
+                        ? 'border-[#272a33] bg-[#fef08a]/40 shadow-[3px_3px_0px_#272a33] ring-2 ring-[#272a33]'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="p-2 rounded-lg bg-amber-400 text-[#272a33] border border-[#272a33]">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h5 className="font-black text-xs text-[#272a33] uppercase">
+                        🎉 Free Event Mode (Unlimited)
+                      </h5>
+                      <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">
+                        Tamu langsung foto tanpa halaman QRIS. Cocok untuk Wedding, Pesta Ulang Tahun, dan Event Sewa.
+                      </p>
+                    </div>
                   </div>
+
+                  <div
+                    onClick={() => setFormData({ ...formData, eventMode: 'paid' })}
+                    className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                      formData.eventMode === 'paid'
+                        ? 'border-[#272a33] bg-[#bfdbfe]/40 shadow-[3px_3px_0px_#272a33] ring-2 ring-[#272a33]'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="p-2 rounded-lg bg-blue-500 text-white border border-[#272a33]">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h5 className="font-black text-xs text-[#272a33] uppercase">
+                        💰 Commercial Mode (Bayar QRIS)
+                      </h5>
+                      <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">
+                        Tamu wajib scan QRIS sebelum foto. Voucher VIP / Panitia tetap bisa dipakai untuk bypass bayar.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price field if paid */}
+                {formData.eventMode === 'paid' && (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border-2 border-[#272a33]">
+                    <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Tarif per Sesi Foto (Rupiah)</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.price}
+                      onChange={e => setFormData({ ...formData, price: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-lg bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[3px_3px_0px_#3b82f6] text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all transform hover:scale-105 active:scale-95"
+                  >
+                    <Save className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Simpan Mode & Tarif</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Part 2: Voucher & VIP Coupon Manager */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-200">
                   <div>
-                    <h5 className="font-black text-xs text-[#272a33] uppercase">
-                      🎉 Free Event Mode (Unlimited)
-                    </h5>
-                    <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                      Pengunjung langsung memilih frame & foto tanpa halaman pembayaran QRIS. Cocok untuk Wedding, Pesta Ulang Tahun, dan Event Sewa.
+                    <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2">
+                      <Ticket className="w-4 h-4 text-pink-600" />
+                      <span>Sistem Voucher & Kupon VIP Panitia</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-100 text-pink-800 font-bold border border-pink-300 font-mono-tech">
+                        {vouchers?.length || 0} Kupon
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Buat kode kupon khusus untuk panitia, sponsor, MC, atau promo diskon sesi komersial
                     </p>
                   </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Bulk VIP Generator Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowBulkModal(true)}
+                      className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Generate Kupon VIP</span>
+                    </button>
+
+                    {/* Add Voucher Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingVoucher(!isAddingVoucher);
+                        setVoucherFormError('');
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#272a33] hover:bg-[#1a1c22] text-white border border-[#272a33] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{isAddingVoucher ? 'Tutup Form' : 'Tambah Kupon'}</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div
-                  onClick={() => setFormData({ ...formData, eventMode: 'paid' })}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3.5 ${
-                    formData.eventMode === 'paid'
-                      ? 'border-[#272a33] bg-[#bfdbfe]/40 shadow-[4px_4px_0px_#272a33] ring-2 ring-[#272a33]'
-                      : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="p-2.5 rounded-xl bg-blue-500 text-white border border-[#272a33]">
-                    <DollarSign className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h5 className="font-black text-xs text-[#272a33] uppercase">
-                      💰 Commercial Mode (Bayar QRIS)
+                {/* Inline Add Voucher Form */}
+                {isAddingVoucher && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setVoucherFormError('');
+                      const res = addVoucher(newVoucherForm);
+                      if (res.success) {
+                        setIsAddingVoucher(false);
+                        setNewVoucherForm({
+                          code: '',
+                          type: 'free',
+                          discountValue: 100,
+                          maxUses: -1,
+                          description: ''
+                        });
+                      } else {
+                        setVoucherFormError(res.message);
+                      }
+                    }}
+                    className="p-4 rounded-xl bg-[#faf6ea] border-2 border-[#272a33] space-y-3 animate-fade-in"
+                  >
+                    <h5 className="font-black text-xs text-[#272a33] uppercase flex items-center gap-1.5">
+                      <Gift className="w-4 h-4 text-pink-600" />
+                      <span>Buat Kode Kupon / Voucher Baru</span>
                     </h5>
-                    <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                      Pengunjung harus melakukan pembayaran scan QRIS terlebih dahulu sebelum dapat memilih frame dan memulai foto.
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                          Kode Voucher (Huruf/Angka)
+                        </label>
+                        <input
+                          type="text"
+                          value={newVoucherForm.code}
+                          onChange={(e) => setNewVoucherForm({ ...newVoucherForm, code: e.target.value.toUpperCase() })}
+                          placeholder="Misal: VIPWEDDING"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border-2 border-[#272a33] text-xs font-mono-tech font-bold uppercase focus:outline-none focus:ring-2 focus:ring-pink-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                          Jenis Kupon
+                        </label>
+                        <select
+                          value={newVoucherForm.type}
+                          onChange={(e) => setNewVoucherForm({ ...newVoucherForm, type: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border-2 border-[#272a33] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        >
+                          <option value="free">🎉 100% Gratis (Akses VIP Bypass)</option>
+                          <option value="percentage">🏷️ Diskon Persen (%)</option>
+                          <option value="nominal">💰 Potongan Nominal (Rp)</option>
+                        </select>
+                      </div>
+
+                      {newVoucherForm.type !== 'free' && (
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                            {newVoucherForm.type === 'percentage' ? 'Persen Diskon (%)' : 'Potongan Rupiah (Rp)'}
+                          </label>
+                          <input
+                            type="number"
+                            value={newVoucherForm.discountValue}
+                            onChange={(e) => setNewVoucherForm({ ...newVoucherForm, discountValue: e.target.value })}
+                            placeholder={newVoucherForm.type === 'percentage' ? '50' : '15000'}
+                            className="w-full px-3 py-1.5 rounded-lg bg-white border-2 border-[#272a33] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            required
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                          Batas Kuota Pemakaian
+                        </label>
+                        <select
+                          value={newVoucherForm.maxUses}
+                          onChange={(e) => setNewVoucherForm({ ...newVoucherForm, maxUses: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border-2 border-[#272a33] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        >
+                          <option value="-1">Unlimited (Tanpa Batas)</option>
+                          <option value="1">1x Pakai (Sekali Pakai)</option>
+                          <option value="5">5x Sesi</option>
+                          <option value="10">10x Sesi</option>
+                          <option value="50">50x Sesi</option>
+                          <option value="100">100x Sesi</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                        Keterangan / Catatan Panitia
+                      </label>
+                      <input
+                        type="text"
+                        value={newVoucherForm.description}
+                        onChange={(e) => setNewVoucherForm({ ...newVoucherForm, description: e.target.value })}
+                        placeholder="Contoh: Khusus Tamu Keluarga Mempelai / Kru Vendor"
+                        className="w-full px-3 py-1.5 rounded-lg bg-white border-2 border-[#272a33] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+
+                    {voucherFormError && (
+                      <p className="text-xs font-bold text-rose-600">
+                        ⚠ {voucherFormError}
+                      </p>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingVoucher(false)}
+                        className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-200 cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-1.5 rounded-lg bg-[#272a33] text-[#fef08a] hover:bg-[#1a1c22] font-black text-xs border-2 border-[#272a33] shadow-[2px_2px_0px_#fde047] cursor-pointer"
+                      >
+                        Simpan Kupon
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Bulk Generator Modal Dialog */}
+                {showBulkModal && (
+                  <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-400 space-y-3 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                      <h5 className="font-black text-xs text-amber-950 uppercase flex items-center gap-1.5">
+                        <Zap className="w-4 h-4 text-amber-600" />
+                        <span>⚡ Generator Kupon VIP Acak (Sekali Pakai)</span>
+                      </h5>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowBulkModal(false);
+                          setBulkGeneratedList([]);
+                        }}
+                        className="text-slate-400 hover:text-slate-700 text-xs"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-amber-800">
+                      Buat beberapa kode voucher acak 1x pakai secara instan untuk dibagikan ke tamu VIP atau undangan khusus.
                     </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-amber-900 mb-1 block">Prefix Kode</label>
+                        <input
+                          type="text"
+                          value={bulkPrefix}
+                          onChange={e => setBulkPrefix(e.target.value.toUpperCase())}
+                          placeholder="VIP"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border border-amber-400 text-xs font-mono-tech font-bold uppercase"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-amber-900 mb-1 block">Jumlah Kupon</label>
+                        <select
+                          value={bulkCount}
+                          onChange={e => setBulkCount(Number(e.target.value))}
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border border-amber-400 text-xs font-semibold"
+                        >
+                          <option value="3">3 Kode</option>
+                          <option value="5">5 Kode (Standar)</option>
+                          <option value="10">10 Kode</option>
+                          <option value="20">20 Kode</option>
+                        </select>
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const generated = generateBulkRandomVouchers({
+                              prefix: bulkPrefix || 'VIP',
+                              count: bulkCount,
+                              type: 'free',
+                              discountValue: 100,
+                              maxUses: 1,
+                              description: 'Kupon VIP Sekali Pakai'
+                            });
+                            setBulkGeneratedList(generated);
+                          }}
+                          className="w-full py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-[#272a33] font-black text-xs border border-[#272a33] shadow-sm cursor-pointer"
+                        >
+                          Generate Sekarang
+                        </button>
+                      </div>
+                    </div>
+
+                    {bulkGeneratedList.length > 0 && (
+                      <div className="p-3 rounded-lg bg-white border border-amber-300 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-emerald-800">
+                            ✓ {bulkGeneratedList.length} Kupon Baru Siap Digunakan:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const textList = bulkGeneratedList.map(v => v.code).join('\n');
+                              navigator.clipboard.writeText(`🎟️ *DAFTAR KODE VOUCHER VIP SNAPBOOTH:*\n${textList}`);
+                              setCopiedBulk(true);
+                              setTimeout(() => setCopiedBulk(false), 2500);
+                            }}
+                            className="px-2.5 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>{copiedBulk ? 'Tersalin!' : 'Salin Semua'}</span>
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {bulkGeneratedList.map(v => (
+                            <span key={v.id} className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-xs font-mono-tech font-bold">
+                              {v.code}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
+                )}
 
-              {/* Price field if paid */}
-              {formData.eventMode === 'paid' && (
-                <div className="p-4 rounded-2xl bg-white border-2 border-[#272a33] shadow-sm">
-                  <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                    <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Tarif per Sesi Foto (Rupiah)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.price}
-                    onChange={e => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              )}
+                {/* Vouchers List Table / Cards */}
+                {vouchers?.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2.5 max-h-[340px] overflow-y-auto pr-1">
+                    {vouchers.map((vch) => {
+                      const isLimitReached = vch.maxUses > 0 && vch.usedCount >= vch.maxUses;
+                      return (
+                        <div
+                          key={vch.id}
+                          className={`p-3 rounded-xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                            !vch.active || isLimitReached
+                              ? 'bg-slate-50 border-slate-200 opacity-60'
+                              : 'bg-white border-[#272a33] shadow-[2px_2px_0px_#272a33]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg border shrink-0 ${
+                              vch.type === 'free' 
+                                ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                                : 'bg-blue-100 text-blue-900 border-blue-300'
+                            }`}>
+                              {vch.type === 'free' ? <Crown className="w-4 h-4" /> : <Tag className="w-4 h-4" />}
+                            </div>
 
-              <div className="flex justify-end pt-4 border-t border-slate-200">
-                <button
-                  type="submit"
-                  className="px-7 py-2.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[3px_3px_0px_#3b82f6] text-xs font-black flex items-center gap-2 cursor-pointer transition-all transform hover:scale-105 active:scale-95"
-                >
-                  <Save className="w-4 h-4 text-amber-300" />
-                  <span>Simpan Pengaturan Pembayaran</span>
-                </button>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono-tech font-black text-xs text-[#272a33] tracking-wide">
+                                  {vch.code}
+                                </span>
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                  vch.type === 'free'
+                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                    : 'bg-blue-100 text-blue-800 border-blue-300'
+                                }`}>
+                                  {vch.type === 'free' 
+                                    ? '100% GRATIS VIP' 
+                                    : vch.type === 'percentage' 
+                                    ? `DISKON ${vch.discountValue}%` 
+                                    : `POTONGAN Rp ${Number(vch.discountValue).toLocaleString('id-ID')}`
+                                  }
+                                </span>
+                                {!vch.active && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">
+                                    NONAKTIF
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                                {vch.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 self-end sm:self-center shrink-0">
+                            {/* Usage Count Pill */}
+                            <div className="text-right font-mono-tech">
+                              <span className="text-[11px] font-bold text-slate-700 block">
+                                {vch.usedCount || 0} / {vch.maxUses === -1 ? '∞' : vch.maxUses} dipakai
+                              </span>
+                              {isLimitReached && (
+                                <span className="text-[9px] font-bold text-rose-600 block">
+                                  Kuota Habis
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Active Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => toggleVoucherActive(vch.id)}
+                              className={`p-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                                vch.active 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
+                                  : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200'
+                              }`}
+                              title={vch.active ? 'Nonaktifkan Kupon' : 'Aktifkan Kupon'}
+                            >
+                              {vch.active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                            </button>
+
+                            {/* Delete Voucher */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Hapus kupon "${vch.code}"?`)) {
+                                  deleteVoucher(vch.id);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 cursor-pointer transition-all"
+                              title="Hapus Kupon"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-50 text-center text-xs text-slate-500 font-medium">
+                    Belum ada kupon yang dibuat. Klik tombol "+ Tambah Kupon" di atas.
+                  </div>
+                )}
               </div>
-            </form>
+            </div>
           )}
 
           {/* ----------------- TAB 5: STATISTIK, OMSET & MASTER EXPORT ----------------- */}
@@ -1689,16 +2093,29 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
                               {log.filterId}
                             </td>
                             <td className="py-2.5">
-                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                                log.isPaid
-                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                  : 'bg-amber-100 text-amber-800 border-amber-300'
-                              }`}>
-                                {log.isPaid ? 'QRIS PAID' : 'FREE EVENT'}
-                              </span>
+                              <div className="flex flex-col items-start gap-1">
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                  log.isPaid
+                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                    : 'bg-amber-100 text-amber-800 border-amber-300'
+                                }`}>
+                                  {log.isPaid ? 'QRIS PAID' : 'FREE EVENT'}
+                                </span>
+                                {log.voucherCode && (
+                                  <span className="text-[9px] font-mono-tech font-bold px-1.5 py-0.5 rounded-md bg-pink-50 text-pink-700 border border-pink-300 flex items-center gap-1">
+                                    <Ticket className="w-2.5 h-2.5 text-pink-600" />
+                                    <span>{log.voucherCode}</span>
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-2.5 text-right font-bold text-[#272a33] font-mono-tech">
                               {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'Gratis'}
+                              {log.discountAmount > 0 && (
+                                <span className="block text-[9px] text-emerald-600 font-medium">
+                                  -Rp {log.discountAmount.toLocaleString('id-ID')}
+                                </span>
+                              )}
                             </td>
                           </tr>
                         ))}
