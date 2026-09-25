@@ -94,6 +94,18 @@ export async function renderMotionVideoStrip(
         });
       }
 
+      // Preload custom watermark image if provided
+      let watermarkImageEl = null;
+      if (eventSettings?.watermarkImage && eventSettings?.enableWatermark !== false) {
+        watermarkImageEl = await new Promise((res) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => res(img);
+          img.onerror = () => res(null);
+          img.src = eventSettings.watermarkImage;
+        });
+      }
+
       // Setup Canvas Stream Recorder
       const stream = canvas.captureStream(30); // 30 FPS
       const mimeType = getSupportedVideoMimeType();
@@ -259,6 +271,55 @@ export async function renderMotionVideoStrip(
           ctx.fillText(eventSettings.subtitle || 'SPECIAL MEMORIES & MOMENTS', width / 2, height - 60);
           ctx.font = '14px "Plus Jakarta Sans", sans-serif';
           ctx.fillText(eventSettings.date || new Date().toLocaleDateString('id-ID'), width / 2, height - 35);
+        }
+
+        // 6. Draw Watermark / Sponsor Logo Overlay if available
+        if (watermarkImageEl) {
+          try {
+            const position = eventSettings?.watermarkPosition || 'bottom-right';
+            const opacity = (Number(eventSettings?.watermarkOpacity) || 90) / 100;
+            const scaleFactor = (Number(eventSettings?.watermarkScale) || 22) / 100;
+
+            ctx.save();
+            ctx.globalAlpha = Math.max(0.1, Math.min(1.0, opacity));
+
+            const maxW = width * scaleFactor;
+            const aspect = (watermarkImageEl.naturalWidth || watermarkImageEl.width || 1) / (watermarkImageEl.naturalHeight || watermarkImageEl.height || 1);
+            let targetW = maxW;
+            let targetH = maxW / aspect;
+
+            const maxH = height * 0.14;
+            if (targetH > maxH) {
+              targetH = maxH;
+              targetW = targetH * aspect;
+            }
+
+            const padding = 20;
+            let x = width - targetW - padding;
+            let y = height - targetH - padding;
+
+            if (position === 'bottom-left') {
+              x = padding;
+              y = height - targetH - padding;
+            } else if (position === 'bottom-right') {
+              x = width - targetW - padding;
+              y = height - targetH - padding;
+            } else if (position === 'top-left') {
+              x = padding;
+              y = padding + 10;
+            } else if (position === 'top-right') {
+              x = width - targetW - padding;
+              y = padding + 10;
+            } else if (position === 'center-bottom') {
+              x = (width - targetW) / 2;
+              y = height - targetH - padding;
+            }
+
+            ctx.drawImage(watermarkImageEl, x, y, targetW, targetH);
+            ctx.restore();
+          } catch (e) {
+            // ignore frame drawing error for watermark
+          }
         }
 
         animFrameId = requestAnimationFrame(drawFrame);

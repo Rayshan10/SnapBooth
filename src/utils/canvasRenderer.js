@@ -339,5 +339,62 @@ export async function renderHighResPhotoStrip(photoDataUrls, template, filterId,
     }
   }
 
+  // Draw Custom Sponsor Logo / Watermark Overlay
+  await drawWatermarkOverlay(ctx, canvas.width, canvas.height, eventInfo);
+
   return canvas.toDataURL('image/jpeg', 0.95);
 }
+
+/**
+ * Draw Custom Watermark / Sponsor Logo Overlay
+ */
+async function drawWatermarkOverlay(ctx, W, H, eventInfo) {
+  if (!eventInfo?.watermarkImage || eventInfo?.enableWatermark === false) return;
+  try {
+    const wmImg = await loadImage(eventInfo.watermarkImage);
+    const position = eventInfo.watermarkPosition || 'bottom-right'; // 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center-bottom'
+    const opacity = (Number(eventInfo.watermarkOpacity) || 90) / 100;
+    const scaleFactor = (Number(eventInfo.watermarkScale) || 22) / 100;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0.1, Math.min(1.0, opacity));
+
+    const maxW = W * scaleFactor;
+    const aspect = wmImg.width / wmImg.height;
+    let targetW = maxW;
+    let targetH = maxW / aspect;
+
+    const maxH = H * 0.14;
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = targetH * aspect;
+    }
+
+    const padding = 28;
+    let x = W - targetW - padding;
+    let y = H - targetH - padding;
+
+    if (position === 'bottom-left') {
+      x = padding;
+      y = H - targetH - padding;
+    } else if (position === 'bottom-right') {
+      x = W - targetW - padding;
+      y = H - targetH - padding;
+    } else if (position === 'top-left') {
+      x = padding;
+      y = padding + 15;
+    } else if (position === 'top-right') {
+      x = W - targetW - padding;
+      y = padding + 15;
+    } else if (position === 'center-bottom') {
+      x = (W - targetW) / 2;
+      y = H - targetH - padding;
+    }
+
+    ctx.drawImage(wmImg, x, y, targetW, targetH);
+    ctx.restore();
+  } catch (err) {
+    console.warn('Could not load custom watermark logo:', err);
+  }
+}
+

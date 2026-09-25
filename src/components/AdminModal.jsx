@@ -73,6 +73,35 @@ const compressImageFile = (file, maxWidth = 1920, quality = 0.82) => {
   });
 };
 
+// Compress transparent PNG logo/watermark preserving alpha channel
+const compressPngFile = (file, maxWidth = 800) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 export default function AdminModal() {
   const { 
     isAdminOpen, 
@@ -238,6 +267,32 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
     }));
   };
 
+  // Handle Watermark / Sponsor Logo Upload
+  const handleWatermarkUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const compressedPng = await compressPngFile(file, 800);
+      setFormData(prev => ({
+        ...prev,
+        watermarkImage: compressedPng,
+        enableWatermark: true
+      }));
+    } catch (err) {
+      console.error('Failed to compress watermark logo:', err);
+      alert('Gagal memproses logo watermark PNG.');
+    }
+  };
+
+  // Handle Remove Watermark Logo
+  const handleRemoveWatermark = () => {
+    setFormData(prev => ({
+      ...prev,
+      watermarkImage: null
+    }));
+  };
+
   // Handle File Upload for Custom Frame PNG
   const handleOverlayFileUpload = (e) => {
     const file = e.target.files[0];
@@ -299,7 +354,12 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
       maxPrintCopies: Number(formData.maxPrintCopies) || 4,
       allowGuestSelectCopies: formData.allowGuestSelectCopies !== false,
       extraCopyMode: formData.extraCopyMode || 'free',
-      extraCopyPrice: Number(formData.extraCopyPrice) || 10000
+      extraCopyPrice: Number(formData.extraCopyPrice) || 10000,
+      watermarkImage: formData.watermarkImage ?? null,
+      enableWatermark: formData.enableWatermark !== false,
+      watermarkPosition: formData.watermarkPosition || 'bottom-right',
+      watermarkScale: Number(formData.watermarkScale) || 22,
+      watermarkOpacity: Number(formData.watermarkOpacity) || 90
     });
     setIsAdminOpen(false);
   };
@@ -1026,6 +1086,293 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
                       onChange={e => setFormData({ ...formData, autoResetDelaySec: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* ================= SECTION C: WATERMARK & LOGO SPONSOR OVERLAY ================= */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2">
+                      <Crown className="w-4 h-4 text-purple-600" />
+                      <span>Watermark & Logo Sponsor Acara (Co-Branding Overlay)</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold border border-purple-300">
+                        Sponsor & Co-Branding
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Sematkan logo sponsor, brand EO, atau corporate identity secara otomatis pada foto strip dan video Live Motion
+                    </p>
+                  </div>
+
+                  {formData.watermarkImage && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ 
+                          ...prev, 
+                          enableWatermark: prev.enableWatermark === false ? true : false 
+                        }))}
+                        className={`px-3 py-1.5 rounded-full text-xs font-black border transition-all cursor-pointer flex items-center gap-1.5 ${
+                          formData.enableWatermark !== false
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-400'
+                            : 'bg-slate-100 text-slate-500 border-slate-300'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{formData.enableWatermark !== false ? 'Overlay Aktif' : 'Overlay Nonaktif'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleRemoveWatermark}
+                        className="p-1.5 rounded-full text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 cursor-pointer transition-all"
+                        title="Hapus Logo Watermark"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                  {/* Left Column: Upload & Settings */}
+                  <div className="lg:col-span-7 space-y-4">
+                    {/* Upload File Input */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Upload className="w-3.5 h-3.5 text-purple-600" />
+                          <span>File Logo Sponsor (Format PNG Transparan)</span>
+                        </span>
+                        <span className="text-[10px] text-slate-500">Maks. 800px (Auto Kompres)</span>
+                      </label>
+
+                      {!formData.watermarkImage ? (
+                        <label className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/40 hover:bg-purple-50/70 transition-all cursor-pointer group">
+                          <input
+                            type="file"
+                            accept="image/png,image/webp,image/jpeg"
+                            onChange={handleWatermarkUpload}
+                            className="hidden"
+                          />
+                          <div className="p-3 rounded-full bg-white border border-purple-200 shadow-xs text-purple-600 group-hover:scale-110 transition-transform mb-2">
+                            <Upload className="w-5 h-5" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-800 group-hover:text-purple-700">
+                            Klik untuk Upload Logo Watermark / Sponsor
+                          </span>
+                          <span className="text-[10px] text-slate-500 mt-0.5">
+                            Gunakan logo berlatar belakang transparan (PNG) untuk hasil terbaik
+                          </span>
+                        </label>
+                      ) : (
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                          <div className="w-16 h-16 rounded-lg border border-slate-300 bg-[linear-gradient(45deg,#e2e8f0_25%,transparent_25%),linear-gradient(-45deg,#e2e8f0_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e2e8f0_75%),linear-gradient(-45deg,transparent_75%,#e2e8f0_75%)] bg-[size:10px_10px] flex items-center justify-center p-1 overflow-hidden shrink-0">
+                            <img
+                              src={formData.watermarkImage}
+                              alt="Watermark Sponsor Logo"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-slate-800 truncate">
+                              Logo Sponsor Terpasang
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-mono-tech mt-0.5">
+                              Ukuran: {formData.watermarkScale || 22}% • Opasitas: {formData.watermarkOpacity || 90}%
+                            </div>
+                            <label className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-bold text-purple-700 hover:text-purple-900 cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/png,image/webp,image/jpeg"
+                                onChange={handleWatermarkUpload}
+                                className="hidden"
+                              />
+                              <Upload className="w-3 h-3" />
+                              <span>Ganti Logo</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Watermark Controls (Position, Scale, Opacity) */}
+                    {formData.watermarkImage && (
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3.5">
+                        {/* Position Selector */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                            Posisi Watermark pada Foto Strip:
+                          </label>
+                          <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                            {[
+                              { id: 'bottom-right', label: 'Kanan Bwh', tip: 'Default' },
+                              { id: 'bottom-left', label: 'Kiri Bwh', tip: '' },
+                              { id: 'center-bottom', label: 'Tengah Bwh', tip: '' },
+                              { id: 'top-right', label: 'Kanan Atas', tip: '' },
+                              { id: 'top-left', label: 'Kiri Atas', tip: '' }
+                            ].map(pos => {
+                              const isSelected = (formData.watermarkPosition || 'bottom-right') === pos.id;
+                              return (
+                                <button
+                                  key={pos.id}
+                                  type="button"
+                                  onClick={() => setFormData({ ...formData, watermarkPosition: pos.id })}
+                                  className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex flex-col items-center justify-center ${
+                                    isSelected
+                                      ? 'bg-[#272a33] text-[#fef08a] border-[#272a33] shadow-[2px_2px_0px_#272a33]'
+                                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  <span>{pos.label}</span>
+                                  {pos.tip && (
+                                    <span className={`text-[8px] mt-0.5 ${isSelected ? 'text-amber-300' : 'text-slate-400'}`}>
+                                      {pos.tip}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Scale / Size Slider */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                              <Sliders className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Ukuran Logo (Skala Strip):</span>
+                            </label>
+                            <span className="text-xs font-bold font-mono-tech px-2 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200">
+                              {formData.watermarkScale || 22}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="10"
+                            max="45"
+                            step="1"
+                            value={formData.watermarkScale || 22}
+                            onChange={e => setFormData({ ...formData, watermarkScale: Number(e.target.value) })}
+                            className="w-full accent-purple-600 cursor-pointer"
+                          />
+                          <div className="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                            <span>Kecil (10%)</span>
+                            <span>Sedang (22%)</span>
+                            <span>Besar (45%)</span>
+                          </div>
+                        </div>
+
+                        {/* Opacity Slider */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                              <Sliders className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Transparansi / Opasitas Logo:</span>
+                            </label>
+                            <span className="text-xs font-bold font-mono-tech px-2 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200">
+                              {formData.watermarkOpacity || 90}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="20"
+                            max="100"
+                            step="5"
+                            value={formData.watermarkOpacity || 90}
+                            onChange={e => setFormData({ ...formData, watermarkOpacity: Number(e.target.value) })}
+                            className="w-full accent-purple-600 cursor-pointer"
+                          />
+                          <div className="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                            <span>Samar / Halus (20%)</span>
+                            <span>Solid / Jelas (100%)</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Live Interactive Strip Mockup Preview */}
+                  <div className="lg:col-span-5 flex flex-col items-center">
+                    <div className="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Pratinjau Posisi pada Strip Foto:</span>
+                    </div>
+
+                    <div className="relative w-44 aspect-[1/3] rounded-2xl border-3 border-[#272a33] overflow-hidden shadow-[6px_6px_0px_#272a33] bg-[#fffef7] flex flex-col justify-between p-2.5 select-none">
+                      {/* Header Mockup */}
+                      <div className="text-center pt-1 pb-1">
+                        <div className="text-[9px] font-black text-[#272a33] truncate font-['Outfit']">
+                          {formData.title || 'SNAPBOOTH EVENT'}
+                        </div>
+                      </div>
+
+                      {/* Photo Poses Slots Mockup */}
+                      <div className="flex-1 flex flex-col gap-1.5 justify-center py-1">
+                        {[1, 2, 3].map(i => (
+                          <div 
+                            key={i} 
+                            className="w-full flex-1 rounded-lg bg-slate-200/90 border border-slate-300 flex items-center justify-center text-[8px] font-bold text-slate-400 font-mono-tech"
+                          >
+                            Pose {i}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Footer Mockup */}
+                      <div className="text-center pt-1 pb-0.5 border-t border-slate-200/60">
+                        <div className="text-[8px] font-bold text-slate-700 truncate">
+                          {formData.subtitle || 'SPECIAL MOMENTS'}
+                        </div>
+                        <div className="text-[7px] text-slate-400 font-mono-tech">
+                          {formData.location || 'EVENT VENUE'}
+                        </div>
+                      </div>
+
+                      {/* Dynamic Watermark Overlay on Mockup */}
+                      {formData.watermarkImage && formData.enableWatermark !== false && (
+                        <div
+                          className="absolute pointer-events-none z-20"
+                          style={{
+                            width: `${formData.watermarkScale || 22}%`,
+                            opacity: (formData.watermarkOpacity || 90) / 100,
+                            ...(formData.watermarkPosition === 'bottom-right' && {
+                              right: '8px',
+                              bottom: '8px'
+                            }),
+                            ...(formData.watermarkPosition === 'bottom-left' && {
+                              left: '8px',
+                              bottom: '8px'
+                            }),
+                            ...(formData.watermarkPosition === 'center-bottom' && {
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              bottom: '8px'
+                            }),
+                            ...(formData.watermarkPosition === 'top-right' && {
+                              right: '8px',
+                              top: '8px'
+                            }),
+                            ...(formData.watermarkPosition === 'top-left' && {
+                              left: '8px',
+                              top: '8px'
+                            })
+                          }}
+                        >
+                          <img
+                            src={formData.watermarkImage}
+                            alt="Watermark Preview"
+                            className="w-full h-auto object-contain drop-shadow-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="text-[10px] text-slate-400 mt-2 font-mono-tech">
+                      Mockup Photo Strip (2x6 inch)
+                    </span>
                   </div>
                 </div>
               </div>
