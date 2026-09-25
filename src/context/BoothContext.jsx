@@ -45,7 +45,13 @@ const DEFAULT_EVENT_SETTINGS = {
   attractMediaType: 'default', // 'default' | 'image' | 'video'
   attractDimming: 0, // 0 to 80 (%)
   attractShowDefaultTitle: true, // show/hide big SNAPBOOTH typography & stickers
-  attractCustomCtaText: 'Click to Start' // custom button label
+  attractCustomCtaText: 'Click to Start', // custom button label
+  // Multi-Print & Extra Copies Configuration
+  defaultPrintCopies: 2, // Default copies printed per session (e.g. 2 for strip pair)
+  maxPrintCopies: 4, // Max copies guest can choose (1 to 6)
+  allowGuestSelectCopies: true, // Allow guests to adjust copies count
+  extraCopyMode: 'free', // 'free' | 'paid' (upselling per extra copy)
+  extraCopyPrice: 10000 // Price per additional copy
 };
 
 export function BoothProvider({ children }) {

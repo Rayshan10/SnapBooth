@@ -11,7 +11,12 @@ import {
   Share2, 
   ExternalLink,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Minus,
+  Layers,
+  Copy,
+  Tag
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -32,14 +37,20 @@ export default function PrintAndShareScreen() {
     : eventSettings.autoResetDelaySec;
   const [autoResetSeconds, setAutoResetSeconds] = useState(initialDelay);
 
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    if (m > 0) {
-      return `${m}m ${s < 10 ? '0' : ''}${s}s`;
-    }
-    return `${s}s`;
-  };
+  // Multi-print state
+  const defaultCopies = Math.max(1, Number(eventSettings.defaultPrintCopies) || 2);
+  const maxCopies = Math.max(defaultCopies, Number(eventSettings.maxPrintCopies) || 4);
+  const [copies, setCopies] = useState(defaultCopies);
+  const [hasPrintedCount, setHasPrintedCount] = useState(0);
+
+  const paperRemaining = printerStatus?.paperRemaining ?? 400;
+  const isLowPaper = paperRemaining <= 20;
+
+  // Extra copy upselling calculation
+  const extraCopiesCount = Math.max(0, copies - defaultCopies);
+  const isPaidExtraMode = eventSettings.extraCopyMode === 'paid';
+  const extraCopyPrice = Number(eventSettings.extraCopyPrice) || 10000;
+  const totalExtraCost = extraCopiesCount * extraCopyPrice;
 
   // Trigger celebration confetti on mount
   useEffect(() => {
@@ -53,9 +64,6 @@ export default function PrintAndShareScreen() {
     } catch (e) {
       console.log('Confetti not available', e);
     }
-
-    // Auto trigger initial print
-    handleTriggerPrint();
   }, []);
 
   // Auto reset countdown timer to return to start screen
@@ -74,10 +82,19 @@ export default function PrintAndShareScreen() {
     return () => clearInterval(timer);
   }, [resetToAttract]);
 
-  const isLowPaper = (printerStatus?.paperRemaining ?? 400) <= 20;
+  const handleExecutePrint = (requestedCopies) => {
+    const countToPrint = requestedCopies || copies;
+    if (countToPrint > paperRemaining) {
+      alert(`Sisa kertas di printer hanya ${paperRemaining} lembar.`);
+      return;
+    }
+
+    handleTriggerPrint(countToPrint);
+    setHasPrintedCount(prev => prev + countToPrint);
+  };
 
   return (
-    <div className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-8 bg-grid-notebook text-slate-900 overflow-hidden select-none">
+    <div className="relative w-full h-screen flex flex-col justify-between items-center p-5 md:p-8 bg-grid-notebook text-slate-900 overflow-y-auto select-none">
       
       {/* ================= BACKGROUND STICKER ORNAMENTS ================= */}
       {/* 1. Sparkle Star Kuning (Kiri Atas) */}
@@ -119,40 +136,39 @@ export default function PrintAndShareScreen() {
       {/* ================= TOP HEADER ================= */}
       <div className="w-full max-w-5xl flex justify-between items-center z-20">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-[#272a33] text-white shadow-md">
-            <CheckCircle2 className="w-6 h-6 text-[#a7f3d0]" />
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-[#272a33] text-white shadow-md">
+            <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#a7f3d0]" />
           </div>
           <div>
             <h2 
-              className="text-2xl md:text-3xl font-black text-[#343a59] leading-tight tracking-tight uppercase"
+              className="text-xl sm:text-2xl md:text-3xl font-black text-[#343a59] leading-tight tracking-tight uppercase"
               style={{ fontFamily: "'Dela Gothic One', 'Bungee', 'Fredoka', sans-serif" }}
             >
               FOTO KAMU SIAP DICETAK & DIUNDUH!
             </h2>
             <p className="text-slate-600 text-xs sm:text-sm font-medium">
-              Ambil cetakan fisik di printer dan scan QR code di samping untuk softfile
+              Pilih jumlah cetakan fisik dan scan QR code untuk download softfile
             </p>
           </div>
         </div>
 
         {/* Auto Reset Timer Badge, Low Paper Warning, & Page Badge */}
-        <div className="flex items-center gap-2.5">
-          {/* Low Paper Warning for Crew */}
+        <div className="flex items-center gap-2">
           {isLowPaper && (
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold font-mono-tech shadow-sm">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-              <span>Sisa Kertas: {printerStatus?.paperRemaining ?? 0} lbr</span>
+              <span>Sisa Kertas: {paperRemaining} lbr</span>
             </div>
           )}
 
-          <div className="px-4 py-2 rounded-full bg-white text-[#272a33] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] flex items-center gap-2 text-xs font-bold font-mono-tech whitespace-nowrap shrink-0">
+          <div className="px-3.5 py-1.5 sm:py-2 rounded-full bg-white text-[#272a33] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] flex items-center gap-1.5 text-xs font-bold font-mono-tech whitespace-nowrap shrink-0">
             <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span className="whitespace-nowrap">Sisa Waktu: {autoResetSeconds}s</span>
+            <span>{autoResetSeconds}s</span>
           </div>
 
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#272a33] text-white shadow-md shrink-0">
-            <span className="text-sm font-bold tracking-wide font-display pl-1">Page</span>
-            <div className="flex items-center justify-center bg-white text-[#272a33] font-black text-xs px-2.5 py-0.5 rounded-full font-mono-tech">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 sm:py-2 rounded-full bg-[#272a33] text-white shadow-md shrink-0">
+            <span className="text-xs sm:text-sm font-bold tracking-wide font-display pl-1">Page</span>
+            <div className="flex items-center justify-center bg-white text-[#272a33] font-black text-xs px-2 py-0.5 rounded-full font-mono-tech">
               06
             </div>
           </div>
@@ -160,61 +176,148 @@ export default function PrintAndShareScreen() {
       </div>
 
       {/* ================= MAIN CONTENT (2 COLUMNS) ================= */}
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 my-auto items-center py-2 z-10">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-5 my-auto items-start py-2 z-10">
         
-        {/* Left Column: Photo Strip Preview & Print Status */}
-        <div className="relative flex flex-col items-center justify-center p-5 rounded-3xl bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33]">
-          <div className="relative max-h-[50vh] overflow-hidden rounded-2xl shadow-md border-2 border-[#272a33] bg-slate-100 flex items-center justify-center p-1">
+        {/* Left Column: Photo Strip Preview & Multi-Print Controls */}
+        <div className="relative flex flex-col items-center justify-center p-4 sm:p-5 rounded-3xl bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33]">
+          <div className="relative max-h-[38vh] sm:max-h-[42vh] overflow-hidden rounded-2xl shadow-md border-2 border-[#272a33] bg-slate-100 flex items-center justify-center p-1 w-full">
             {finalRenderedPhoto ? (
               <img 
                 src={finalRenderedPhoto} 
                 alt="Rendered Photo Strip" 
-                className="max-h-[47vh] w-auto object-contain rounded-xl"
+                className="max-h-[36vh] sm:max-h-[40vh] w-auto object-contain rounded-xl"
               />
             ) : (
-              <div className="w-48 h-80 bg-slate-200 animate-pulse rounded-xl" />
+              <div className="w-44 h-72 bg-slate-200 animate-pulse rounded-xl" />
             )}
 
             {/* Printing Progress Overlay */}
             {isPrinting && (
-              <div className="absolute inset-0 bg-[#272a33]/92 rounded-2xl backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center z-20">
-                <Printer className="w-9 h-9 text-amber-300 animate-bounce mb-1.5" />
+              <div className="absolute inset-0 bg-[#272a33]/92 rounded-2xl backdrop-blur-xs flex flex-col items-center justify-center p-3 text-center z-20 animate-fade-in">
+                <Printer className="w-10 h-10 text-amber-300 animate-bounce mb-2" />
                 <div className="flex flex-col items-center justify-center">
                   <span 
-                    className="font-black text-[11px] text-amber-300 uppercase tracking-widest leading-tight"
+                    className="font-black text-sm text-amber-300 uppercase tracking-widest leading-tight"
                     style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
                   >
-                    SEDANG
+                    SEDANG MENCETAK
                   </span>
                   <span 
-                    className="font-black text-xs text-white uppercase tracking-wider mt-0.5 leading-tight"
-                    style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+                    className="font-bold text-xs text-white uppercase tracking-wider mt-1 leading-tight font-mono-tech"
                   >
-                    MENCETAK...
+                    {copies} Lembar Foto Fisik...
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-300 mt-1.5 font-mono-tech px-1 leading-tight text-center">
-                  Mengirim data foto ke {eventSettings.printerName}
+                <p className="text-[10px] text-slate-300 mt-2 font-mono-tech px-2 leading-tight text-center">
+                  Mengirim ke printer {eventSettings.printerName || 'Kiosk Printer'}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Print Again Button */}
-          <div className="mt-3.5 flex gap-3">
+          {/* ================= MULTI-PRINT QUANTITY SELECTOR ================= */}
+          <div className="w-full mt-3.5 p-3.5 rounded-2xl bg-[#faf6ea] border-2 border-[#272a33] space-y-2.5 text-left">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-indigo-600" />
+                <span className="text-xs font-black text-[#272a33] uppercase">
+                  Jumlah Lembar Cetak
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-slate-500 font-mono-tech">
+                Sisa Kertas: {paperRemaining} lbr
+              </span>
+            </div>
+
+            {/* Stepper + Presets Row */}
+            <div className="flex items-center gap-3">
+              {/* Stepper Counter */}
+              <div className="flex items-center bg-white rounded-xl border-2 border-[#272a33] p-1 shadow-sm shrink-0">
+                <button
+                  type="button"
+                  disabled={isPrinting || copies <= 1}
+                  onClick={() => setCopies(prev => Math.max(1, prev - 1))}
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#272a33] disabled:opacity-30 cursor-pointer transition-all"
+                  title="Kurangi lembar"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="w-10 text-center font-mono-tech font-black text-base text-[#272a33]">
+                  {copies}
+                </span>
+                <button
+                  type="button"
+                  disabled={isPrinting || copies >= maxCopies || copies >= paperRemaining}
+                  onClick={() => setCopies(prev => Math.min(maxCopies, Math.min(paperRemaining, prev + 1)))}
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#272a33] disabled:opacity-30 cursor-pointer transition-all"
+                  title="Tambah lembar"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Quick Presets Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[1, 2, 3, 4].filter(num => num <= maxCopies).map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    disabled={isPrinting || num > paperRemaining}
+                    onClick={() => setCopies(num)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                      copies === num
+                        ? 'bg-[#272a33] text-[#fef08a] border-[#272a33] shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    {num}x {num === 1 ? 'Solo' : num === 2 ? 'Pasang' : num === 3 ? 'Trio' : 'Grup'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Extra Copy Upsell Notice (if paid extra copies) */}
+            {isPaidExtraMode && extraCopiesCount > 0 && (
+              <div className="p-2 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-bold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5 text-amber-700" />
+                  <span>+{extraCopiesCount} Lembar Tambahan:</span>
+                </span>
+                <span className="font-mono-tech font-black text-emerald-800">
+                  +Rp {totalExtraCost.toLocaleString('id-ID')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Print Trigger Button */}
+          <div className="w-full mt-3 flex flex-col gap-1.5">
             <button
-              onClick={handleTriggerPrint}
-              disabled={isPrinting}
-              className="px-6 py-2.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[3px_3px_0px_#fde047] font-bold text-xs flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50"
+              onClick={() => handleExecutePrint(copies)}
+              disabled={isPrinting || paperRemaining <= 0}
+              className="w-full py-3 sm:py-3.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#fde047] font-display font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all transform hover:scale-102 active:scale-98 cursor-pointer disabled:opacity-50"
             >
               <Printer className="w-4 h-4 text-amber-300" />
-              <span>{isPrinting ? 'Mencetak...' : 'Cetak Ulang (Print Again)'}</span>
+              <span>
+                {isPrinting 
+                  ? 'Sedang Memproses Cetak...' 
+                  : hasPrintedCount > 0 
+                  ? `Cetak Tambahan (${copies} Lembar)` 
+                  : `Cetak Sekarang (${copies} Lembar Foto)`}
+              </span>
             </button>
+
+            {hasPrintedCount > 0 && (
+              <p className="text-[11px] text-emerald-700 font-bold flex items-center justify-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                <span>Total {hasPrintedCount} lembar telah dicetak pada sesi ini.</span>
+              </p>
+            )}
           </div>
         </div>
 
         {/* Right Column: QR Code Softfile Download */}
-        <div className="flex flex-col items-center text-center p-5 rounded-3xl bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33]">
+        <div className="flex flex-col items-center text-center p-4 sm:p-5 rounded-3xl bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33]">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#e4ecfc] text-[#272a33] border border-[#272a33] text-xs font-bold font-mono-tech mb-2">
             <QrCode className="w-3.5 h-3.5 text-blue-600" />
             <span>
@@ -225,13 +328,13 @@ export default function PrintAndShareScreen() {
           </div>
 
           <h3 
-            className="text-lg sm:text-xl font-black text-[#343a59] mb-1 uppercase tracking-tight"
+            className="text-base sm:text-lg md:text-xl font-black text-[#343a59] mb-1 uppercase tracking-tight"
             style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
           >
-            Scan QR Code dengan Kamera HP
+            Scan QR Code dengan HP
           </h3>
           <p className="text-slate-600 text-xs mb-3 font-medium max-w-sm">
-            Scan untuk mengunduh <strong>Paket Lengkap Softfile</strong>: Foto Strip HD, Live Video, GIF Boomerang, & Pose Satuan.
+            Unduh <strong>Paket Lengkap Softfile</strong>: Foto Strip HD, Live Motion Video, GIF Boomerang, & Pose Satuan.
           </p>
 
           {/* QR Code Frame */}
@@ -240,18 +343,18 @@ export default function PrintAndShareScreen() {
               <img 
                 src={softfileInfo.qrDataUrl} 
                 alt="Scan to Download Softfile" 
-                className="w-48 h-48 sm:w-52 sm:h-52 object-contain"
+                className="w-44 h-44 sm:w-48 sm:h-48 object-contain"
               />
             ) : (
-              <div className="w-48 h-48 bg-slate-200 animate-pulse rounded-xl" />
+              <div className="w-44 h-44 bg-slate-200 animate-pulse rounded-xl" />
             )}
           </div>
 
           {/* 1-Hour Expiry Alert Badge */}
-          <div className="mt-3 w-full py-2 px-3.5 rounded-xl bg-[#fef08a] border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] flex items-center justify-center gap-2 text-[#272a33] text-xs font-bold font-mono-tech">
-            <Clock className="w-4 h-4 text-[#272a33] shrink-0" />
+          <div className="mt-3 w-full py-2 px-3 rounded-xl bg-[#fef08a] border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] flex items-center justify-center gap-2 text-[#272a33] text-[11px] sm:text-xs font-bold font-mono-tech">
+            <Clock className="w-3.5 h-3.5 text-[#272a33] shrink-0" />
             <span>
-              Softfile foto <strong>tersimpan 1 jam</strong> di sistem sebelum otomatis terhapus.
+              Softfile foto <strong>tersimpan 1 jam</strong> di sistem.
             </span>
           </div>
 
@@ -265,7 +368,7 @@ export default function PrintAndShareScreen() {
                   setViewingSoftfileId(softfileInfo.id);
                 }
               }}
-              className="mt-3 text-xs text-[#272a33] hover:text-blue-600 underline font-bold flex items-center gap-1 font-mono-tech cursor-pointer transition-colors"
+              className="mt-2 text-xs text-[#272a33] hover:text-blue-600 underline font-bold flex items-center gap-1 font-mono-tech cursor-pointer transition-colors"
             >
               <span>Uji tampilan unduhan tamu (Buka Halaman Tamu)</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -279,9 +382,9 @@ export default function PrintAndShareScreen() {
       <div className="w-full max-w-5xl flex justify-center items-center pt-2 border-t-2 border-[#272a33]/20 z-20">
         <button
           onClick={resetToAttract}
-          className="px-10 sm:px-14 py-3.5 sm:py-4 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#22c55e] font-display font-black text-sm sm:text-base tracking-wide flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="px-8 sm:px-12 py-3 sm:py-3.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#22c55e] font-display font-black text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <CheckCircle2 className="w-5 h-5 text-[#a7f3d0]" />
+          <CheckCircle2 className="w-4 h-4 text-[#a7f3d0]" />
           <span>Selesai & Kembali ke Halaman Utama</span>
         </button>
       </div>

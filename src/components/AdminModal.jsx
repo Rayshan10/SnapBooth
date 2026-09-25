@@ -294,7 +294,12 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
       maxRetakes: Number(formData.maxRetakes ?? 2),
       motionDurationSec: Number(formData.motionDurationSec ?? 4),
       autoResetDelaySec: Number(formData.autoResetDelaySec) || 90,
-      attractDimming: Number(formData.attractDimming) || 0
+      attractDimming: Number(formData.attractDimming) || 0,
+      defaultPrintCopies: Number(formData.defaultPrintCopies) || 2,
+      maxPrintCopies: Number(formData.maxPrintCopies) || 4,
+      allowGuestSelectCopies: formData.allowGuestSelectCopies !== false,
+      extraCopyMode: formData.extraCopyMode || 'free',
+      extraCopyPrice: Number(formData.extraCopyPrice) || 10000
     });
     setIsAdminOpen(false);
   };
@@ -1366,6 +1371,91 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
                     className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              {/* Part C: Multi-Print & Extra Copies Configuration */}
+              <div className="p-5 rounded-2xl bg-white border-2 border-[#272a33] shadow-[4px_4px_0px_#272a33] space-y-4">
+                <div>
+                  <h4 className="font-extrabold text-sm text-[#272a33] flex items-center gap-2 mb-0.5">
+                    <Layers className="w-4 h-4 text-indigo-600" />
+                    <span>Pengaturan Multi-Print & Cetak Ekstra (Upselling)</span>
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Atur jumlah cetak bawaan per sesi, batas maksimal, dan opsi penambahan tarif untuk lembar ekstra
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 block">
+                      Jumlah Cetak Default (Bawaan)
+                    </label>
+                    <select
+                      value={formData.defaultPrintCopies || 2}
+                      onChange={e => setFormData({ ...formData, defaultPrintCopies: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="1">1 Lembar</option>
+                      <option value="2">2 Lembar (Standar Sepasang Strip 2x6)</option>
+                      <option value="3">3 Lembar</option>
+                      <option value="4">4 Lembar</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 block">
+                      Batas Maksimal Cetak per Sesi
+                    </label>
+                    <select
+                      value={formData.maxPrintCopies || 4}
+                      onChange={e => setFormData({ ...formData, maxPrintCopies: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="2">Maks 2 Lembar</option>
+                      <option value="3">Maks 3 Lembar</option>
+                      <option value="4">Maks 4 Lembar (Rekomendasi)</option>
+                      <option value="6">Maks 6 Lembar (Grup Besar)</option>
+                      <option value="8">Maks 8 Lembar</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 mb-1 block">
+                      Mode Cetak Ekstra
+                    </label>
+                    <select
+                      value={formData.extraCopyMode || 'free'}
+                      onChange={e => setFormData({ ...formData, extraCopyMode: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="free">🎉 Gratis (Included s/d Batas Maksimal)</option>
+                      <option value="paid">💰 Berbayar (Upselling per Lembar Tambahan)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {formData.extraCopyMode === 'paid' && (
+                  <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-amber-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <span className="text-xs font-black text-amber-950 block">
+                        Tarif per Lembar Tambahan (Upsell Price)
+                      </span>
+                      <p className="text-[11px] text-amber-800">
+                        Dikenakan untuk setiap lembar yang melebihi jumlah default ({formData.defaultPrintCopies || 2} lembar)
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-700">Rp</span>
+                      <input
+                        type="number"
+                        value={formData.extraCopyPrice || 10000}
+                        onChange={e => setFormData({ ...formData, extraCopyPrice: Number(e.target.value) })}
+                        className="w-32 px-3 py-1.5 rounded-lg bg-white border-2 border-[#272a33] text-xs font-mono-tech font-bold"
+                        step="1000"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Save Button */}
