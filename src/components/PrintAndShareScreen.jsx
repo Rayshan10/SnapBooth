@@ -185,7 +185,7 @@ export default function PrintAndShareScreen() {
       <div className="w-full max-w-6xl flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch justify-center my-auto py-1 z-10">
         
         {/* ================= LEFT SECTION: LARGE MEDIA PREVIEW (7 COLS) ================= */}
-        <div className="md:col-span-7 flex flex-col items-center justify-between text-center p-3.5 sm:p-4 rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] h-full min-h-0">
+        <div className="md:col-span-7 flex flex-col items-center justify-between text-center p-3.5 sm:p-4.5 rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] h-full min-h-0 relative overflow-hidden">
           
           {/* Card Top Title & Badge */}
           <div className="w-full flex justify-between items-center px-1 shrink-0">
@@ -204,98 +204,96 @@ export default function PrintAndShareScreen() {
             </div>
           </div>
 
-          {/* Center Large Preview Frame */}
-          <div className="flex-1 min-h-0 my-2 flex items-center justify-center w-full">
-            <div className="relative h-full max-h-[44vh] sm:max-h-[48vh] w-full p-2 sm:p-3 bg-[#faf6ea] border-2 sm:border-3 border-[#272a33] rounded-2xl shadow-[4px_4px_0px_#272a33] flex items-center justify-center overflow-hidden">
-              
-              {/* TAB 1: FOTO STRIP PREVIEW (TWIN STRIP LIKE BOXOS) */}
-              {activeTab === 'photo' && (
-                finalRenderedPhoto ? (
-                  <div className="flex items-center justify-center gap-2 sm:gap-4 h-full max-h-[42vh] sm:max-h-[46vh] animate-in fade-in duration-200">
-                    {/* Strip 1 */}
+          {/* Center Direct Media Preview (No inner container box - Maximum size!) */}
+          <div className="flex-1 min-h-0 my-1 sm:my-2 flex items-center justify-center w-full relative">
+            
+            {/* TAB 1: FOTO STRIP PREVIEW (TWIN STRIP LIKE BOXOS) */}
+            {activeTab === 'photo' && (
+              finalRenderedPhoto ? (
+                <div className="flex items-center justify-center gap-3 sm:gap-5 h-full max-h-[50vh] sm:max-h-[54vh] w-full animate-in fade-in duration-200">
+                  {/* Strip 1 */}
+                  <img 
+                    src={finalRenderedPhoto} 
+                    alt="Hasil Foto Strip 1" 
+                    className="h-full w-auto max-h-[46vh] sm:max-h-[52vh] object-contain block rounded-xl shadow-[4px_4px_0px_#272a33] border-2 sm:border-3 border-[#272a33] transform hover:scale-101 transition-transform"
+                  />
+                  
+                  {/* Strip 2 (Twin Strip Kembar if vertical strip) */}
+                  {!isGrid4R && (
                     <img 
                       src={finalRenderedPhoto} 
-                      alt="Hasil Foto Strip 1" 
-                      className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain block rounded-lg shadow-md border border-[#272a33]/40 transform hover:scale-101 transition-transform"
+                      alt="Hasil Foto Strip 2" 
+                      className="h-full w-auto max-h-[46vh] sm:max-h-[52vh] object-contain block rounded-xl shadow-[4px_4px_0px_#272a33] border-2 sm:border-3 border-[#272a33] transform hover:scale-101 transition-transform"
                     />
-                    
-                    {/* Strip 2 (Twin Strip Kembar if vertical strip) */}
-                    {!isGrid4R && (
-                      <img 
-                        src={finalRenderedPhoto} 
-                        alt="Hasil Foto Strip 2" 
-                        className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain block rounded-lg shadow-md border border-[#272a33]/40 transform hover:scale-101 transition-transform"
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-32 h-64 bg-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-xs rounded-xl">
-                    Memproses Foto...
-                  </div>
-                )
-              )}
-
-              {/* TAB 2: LIVE MOTION VIDEO / GIF PREVIEW */}
-              {activeTab === 'motion' && (
-                <div className="flex items-center justify-center h-full max-h-[42vh] sm:max-h-[46vh] w-full animate-in fade-in duration-200">
-                  {motionVideoSrc ? (
-                    <div className="relative h-full max-h-[40vh] sm:max-h-[44vh] flex items-center justify-center">
-                      <video 
-                        src={motionVideoSrc} 
-                        autoPlay 
-                        loop 
-                        muted 
-                        playsInline 
-                        className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain rounded-lg shadow-md border border-[#272a33]/40 block"
-                      />
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm font-mono-tech">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                        <span>LIVE MOTION</span>
-                      </div>
-                    </div>
-                  ) : gifSrc ? (
-                    <div className="relative h-full max-h-[40vh] sm:max-h-[44vh] flex items-center justify-center">
-                      <img 
-                        src={gifSrc} 
-                        alt="GIF Boomerang Preview" 
-                        className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain rounded-lg shadow-md border border-[#272a33]/40 block"
-                      />
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-purple-500 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm font-mono-tech">
-                        <span>GIF BOOMERANG</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-500 text-xs p-6 bg-white/70 rounded-xl border border-dashed border-slate-300">
-                      <Film className="w-8 h-8 text-slate-400 mb-2 animate-bounce" />
-                      <span>Membuat Live Motion Video...</span>
-                    </div>
                   )}
                 </div>
-              )}
-
-              {/* Printing Overlay Animation */}
-              {isPrinting && (
-                <div className="absolute inset-0 bg-[#272a33]/90 backdrop-blur-xs flex flex-col items-center justify-center p-3 animate-in fade-in duration-200 z-30">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-3 border-amber-300 border-t-transparent animate-spin mb-2" />
-                  <div className="flex flex-col items-center">
-                    <span 
-                      className="font-black text-xs sm:text-sm text-amber-300 uppercase tracking-widest leading-tight"
-                      style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
-                    >
-                      SEDANG MENCETAK
-                    </span>
-                    <span 
-                      className="font-bold text-[11px] sm:text-xs text-white uppercase tracking-wider mt-0.5 leading-tight font-mono-tech"
-                    >
-                      {targetCopies} Lembar Foto Fisik...
-                    </span>
-                  </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-300 mt-1.5 font-mono-tech px-2 leading-tight text-center">
-                    Mengirim ke printer {eventSettings.printerName || 'Kiosk Printer'}
-                  </p>
+              ) : (
+                <div className="w-32 h-64 bg-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-xs rounded-xl">
+                  Memproses Foto...
                 </div>
-              )}
-            </div>
+              )
+            )}
+
+            {/* TAB 2: LIVE MOTION VIDEO / GIF PREVIEW */}
+            {activeTab === 'motion' && (
+              <div className="flex items-center justify-center h-full max-h-[50vh] sm:max-h-[54vh] w-full animate-in fade-in duration-200">
+                {motionVideoSrc ? (
+                  <div className="relative h-full max-h-[46vh] sm:max-h-[52vh] flex items-center justify-center">
+                    <video 
+                      src={motionVideoSrc} 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline 
+                      className="h-full w-auto max-h-[46vh] sm:max-h-[52vh] object-contain rounded-xl shadow-[4px_4px_0px_#272a33] border-2 sm:border-3 border-[#272a33] block"
+                    />
+                    <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center gap-1.5 shadow-md font-mono-tech border border-white/40">
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                      <span>LIVE MOTION</span>
+                    </div>
+                  </div>
+                ) : gifSrc ? (
+                  <div className="relative h-full max-h-[46vh] sm:max-h-[52vh] flex items-center justify-center">
+                    <img 
+                      src={gifSrc} 
+                      alt="GIF Boomerang Preview" 
+                      className="h-full w-auto max-h-[46vh] sm:max-h-[52vh] object-contain rounded-xl shadow-[4px_4px_0px_#272a33] border-2 sm:border-3 border-[#272a33] block"
+                    />
+                    <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-purple-500 text-white text-[10px] font-bold flex items-center gap-1 shadow-md font-mono-tech border border-white/40">
+                      <span>GIF BOOMERANG</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-500 text-xs p-6 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300">
+                    <Film className="w-8 h-8 text-slate-400 mb-2 animate-bounce" />
+                    <span>Membuat Live Motion Video...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Printing Overlay Animation */}
+            {isPrinting && (
+              <div className="absolute inset-0 bg-[#272a33]/90 backdrop-blur-xs flex flex-col items-center justify-center p-3 animate-in fade-in duration-200 z-30 rounded-2xl">
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-3 border-amber-300 border-t-transparent animate-spin mb-2" />
+                <div className="flex flex-col items-center">
+                  <span 
+                    className="font-black text-xs sm:text-sm text-amber-300 uppercase tracking-widest leading-tight"
+                    style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+                  >
+                    SEDANG MENCETAK
+                  </span>
+                  <span 
+                    className="font-bold text-[11px] sm:text-xs text-white uppercase tracking-wider mt-0.5 leading-tight font-mono-tech"
+                  >
+                    {targetCopies} Lembar Foto Fisik...
+                  </span>
+                </div>
+                <p className="text-[9px] sm:text-[10px] text-slate-300 mt-1.5 font-mono-tech px-2 leading-tight text-center">
+                  Mengirim ke printer {eventSettings.printerName || 'Kiosk Printer'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* 2 TOGGLE BUTTONS (BOXOS STYLE: [ Foto ] & [ GIF / Motion ]) */}
@@ -353,17 +351,17 @@ export default function PrintAndShareScreen() {
             </p>
           </div>
 
-          {/* QR Code Frame */}
-          <div className="flex-1 min-h-0 my-1.5 flex items-center justify-center">
-            <div className="p-2.5 bg-white rounded-xl sm:rounded-2xl border-2 sm:border-3 border-[#272a33] shadow-[3px_3px_0px_#272a33]">
+          {/* QR Code Frame - Enlarged for super quick and easy scanning */}
+          <div className="flex-1 min-h-0 my-1 flex items-center justify-center">
+            <div className="p-3 bg-white rounded-2xl border-3 border-[#272a33] shadow-[4px_4px_0px_#272a33]">
               {softfileInfo?.qrDataUrl ? (
                 <img 
                   src={softfileInfo.qrDataUrl} 
                   alt="Scan to Download Softfile" 
-                  className="w-28 h-28 sm:w-36 sm:h-36 max-h-[19vh] object-contain block"
+                  className="w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 max-h-[23vh] object-contain block"
                 />
               ) : (
-                <div className="w-28 h-28 sm:w-36 sm:h-36 bg-slate-200 animate-pulse rounded-lg" />
+                <div className="w-36 h-36 sm:w-44 sm:h-44 bg-slate-200 animate-pulse rounded-xl" />
               )}
             </div>
           </div>
