@@ -8,15 +8,10 @@ import {
   Sparkles, 
   RotateCcw, 
   CheckCircle2, 
-  Share2, 
   ExternalLink,
   Check,
   AlertTriangle,
-  Plus,
-  Minus,
-  Layers,
-  Copy,
-  Tag
+  RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -38,10 +33,8 @@ export default function PrintAndShareScreen() {
     : eventSettings.autoResetDelaySec;
   const [autoResetSeconds, setAutoResetSeconds] = useState(initialDelay);
 
-  // Multi-print state
-  const defaultCopies = Math.max(1, Number(eventSettings.defaultPrintCopies) || 2);
-  const maxCopies = Math.max(defaultCopies, Number(eventSettings.maxPrintCopies) || 6);
-  const [copies, setCopies] = useState(() => sessionCopies || defaultCopies);
+  // Target copies bought before payment
+  const targetCopies = Math.max(1, Number(sessionCopies) || Number(eventSettings.defaultPrintCopies) || 2);
   const [hasPrintedCount, setHasPrintedCount] = useState(0);
 
   const paperRemaining = printerStatus?.paperRemaining ?? 400;
@@ -61,10 +54,9 @@ export default function PrintAndShareScreen() {
     }
   }, []);
 
-  // Auto-trigger printing on mount for the purchased sessionCopies
+  // Auto-trigger printing on mount for the purchased targetCopies
   useEffect(() => {
     if (finalRenderedPhoto && hasPrintedCount === 0) {
-      const targetCopies = sessionCopies || defaultCopies;
       handleTriggerPrint(targetCopies);
       setHasPrintedCount(targetCopies);
     }
@@ -86,15 +78,14 @@ export default function PrintAndShareScreen() {
     return () => clearInterval(timer);
   }, [resetToAttract]);
 
-  const handleExecutePrint = (requestedCopies) => {
-    const countToPrint = requestedCopies || copies;
-    if (countToPrint > paperRemaining) {
+  const handleReprint = (count = 1) => {
+    if (count > paperRemaining) {
       alert(`Sisa kertas di printer hanya ${paperRemaining} lembar.`);
       return;
     }
 
-    handleTriggerPrint(countToPrint);
-    setHasPrintedCount(prev => prev + countToPrint);
+    handleTriggerPrint(count);
+    setHasPrintedCount(prev => prev + count);
   };
 
   return (
@@ -148,7 +139,7 @@ export default function PrintAndShareScreen() {
               className="text-xl sm:text-2xl md:text-3xl font-black text-[#343a59] leading-tight tracking-tight uppercase"
               style={{ fontFamily: "'Dela Gothic One', 'Bungee', 'Fredoka', sans-serif" }}
             >
-              FOTO KAMU SIAP DICETAK & DIUNDUH!
+              FOTO KAMU SIAP DIAMBIL & DIUNDUH!
             </h2>
             <p className="text-slate-600 text-xs sm:text-sm font-medium">
               Ambil hasil cetak fisikmu di tray printer dan scan QR code untuk softfile HD
@@ -182,11 +173,11 @@ export default function PrintAndShareScreen() {
       {/* ================= MAIN CONTENT (2 COLUMNS) ================= */}
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-5 my-auto items-start py-2 z-10">
         
-        {/* Left Column: Photo Preview & Print Status */}
+        {/* Left Column: Photo Preview & Clean Print Status */}
         <div className="flex flex-col items-center text-center p-4 sm:p-5 rounded-3xl bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33]">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#fde047] text-[#272a33] border border-[#272a33] text-xs font-bold font-mono-tech mb-2">
             <Sparkles className="w-3.5 h-3.5 text-[#272a33]" />
-            <span>HASIL CETAKAN FISIK ({sessionCopies || defaultCopies} LEMBAR)</span>
+            <span>HASIL CETAKAN FISIK ({targetCopies} LEMBAR)</span>
           </div>
 
           {/* Photo Render Preview */}
@@ -217,7 +208,7 @@ export default function PrintAndShareScreen() {
                   <span 
                     className="font-bold text-xs text-white uppercase tracking-wider mt-1 leading-tight font-mono-tech"
                   >
-                    {copies} Lembar Foto Fisik...
+                    {targetCopies} Lembar Foto Fisik...
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-300 mt-2 font-mono-tech px-2 leading-tight text-center">
@@ -227,37 +218,42 @@ export default function PrintAndShareScreen() {
             )}
           </div>
 
-          {/* ================= PRINT STATUS & REPRINT INFO ================= */}
-          <div className="w-full mt-3 p-3 rounded-2xl bg-[#faf6ea] border-2 border-[#272a33] space-y-2 text-left">
+          {/* ================= CLEAN LIVE PRINT STATUS CARD ================= */}
+          <div className="w-full mt-3 p-3.5 rounded-2xl bg-[#faf6ea] border-2 border-[#272a33] space-y-2 text-left">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-1.5">
                 <Printer className="w-4 h-4 text-purple-600" />
                 <span className="text-xs font-black text-[#272a33] uppercase">
-                  Status Cetak Sesi
+                  Status Cetak Otomatis
                 </span>
               </div>
-              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full font-mono-tech">
-                ✓ Selesai ({hasPrintedCount} Lbr Tercetak)
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono-tech border ${
+                isPrinting 
+                  ? 'bg-amber-100 text-amber-900 border-amber-300 animate-pulse' 
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+              }`}>
+                {isPrinting ? '⏳ Proses Mencetak...' : `✓ ${hasPrintedCount || targetCopies} Lembar Tercetak`}
               </span>
             </div>
 
-            <p className="text-[11px] text-slate-600">
-              Cek tray printer di bagian bawah kiosk untuk mengambil strip fotomu.
+            <p className="text-[11px] text-slate-600 leading-relaxed">
+              Fotomu otomatis dicetak <strong>{targetCopies} lembar</strong> sesuai pesanan di awal. Silakan ambil foto fisik di tray printer bagian bawah kiosk.
             </p>
 
-            {/* Reprint Operator / Guest button */}
-            <div className="pt-1.5 border-t border-slate-200 flex items-center justify-between">
+            {/* Reprint Operator / Emergency button */}
+            <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
               <span className="text-[10px] text-slate-500 font-mono-tech">
                 Sisa Kertas: {paperRemaining} lbr
               </span>
               <button
                 type="button"
                 disabled={isPrinting || paperRemaining <= 0}
-                onClick={() => handleExecutePrint(1)}
-                className="px-3 py-1 rounded-xl bg-white hover:bg-slate-100 text-[#272a33] border border-slate-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all disabled:opacity-40"
+                onClick={() => handleReprint(1)}
+                className="px-3 py-1 rounded-xl bg-white hover:bg-slate-100 text-[#272a33] border border-slate-300 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all disabled:opacity-40"
+                title="Cetak ulang jika ada kertas macet atau rusak"
               >
-                <Printer className="w-3 h-3 text-purple-600" />
-                <span>Cetak Ulang (+1 Lembar)</span>
+                <RefreshCw className="w-3 h-3 text-purple-600" />
+                <span>Cetak Ulang (+1 Lbr)</span>
               </button>
             </div>
           </div>
