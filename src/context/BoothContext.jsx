@@ -685,6 +685,14 @@ export function BoothProvider({ children }) {
         motionVideoBlob,
         zipBlob
       });
+      if (motionVideoBlob) {
+        try {
+          softfileData.motionBlobUrl = URL.createObjectURL(motionVideoBlob);
+        } catch (e) {
+          console.warn('Could not create motion object URL', e);
+        }
+      }
+      softfileData.gifDataUrl = gifDataUrl;
       setSoftfileInfo(softfileData);
 
       // 6. Increment Voucher Usage if applied

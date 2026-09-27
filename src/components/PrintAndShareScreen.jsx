@@ -9,9 +9,11 @@ import {
   RotateCcw, 
   CheckCircle2, 
   ExternalLink,
-  Check,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Image as ImageIcon,
+  Film,
+  Play
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -25,8 +27,12 @@ export default function PrintAndShareScreen() {
     resetToAttract,
     setViewingSoftfileId,
     printerStatus,
-    sessionCopies
+    sessionCopies,
+    selectedFrame
   } = useBooth();
+
+  // Active preview tab: 'photo' | 'motion'
+  const [activeTab, setActiveTab] = useState('photo');
 
   const initialDelay = (!eventSettings.autoResetDelaySec || eventSettings.autoResetDelaySec === 45) 
     ? 90 
@@ -88,6 +94,11 @@ export default function PrintAndShareScreen() {
     setHasPrintedCount(prev => prev + count);
   };
 
+  // Determine if layout is a vertical strip (show 2 twin strips like BoxOS / 4R cut)
+  const isGrid4R = selectedFrame?.isGrid4R || selectedFrame?.gridType === 'grid2x2';
+  const motionVideoSrc = softfileInfo?.motionBlobUrl || softfileInfo?.motionUrl;
+  const gifSrc = softfileInfo?.gifDataUrl || softfileInfo?.gifUrl;
+
   return (
     <div className="relative w-full h-screen max-h-screen flex flex-col justify-between items-center p-3 sm:p-4 md:p-5 bg-grid-notebook text-slate-900 overflow-hidden select-none">
       
@@ -129,7 +140,7 @@ export default function PrintAndShareScreen() {
       </div>
 
       {/* ================= TOP HEADER ================= */}
-      <div className="w-full max-w-5xl flex justify-between items-center shrink-0 z-20">
+      <div className="w-full max-w-6xl flex justify-between items-center shrink-0 z-20">
         <div className="flex items-center gap-3">
           <div className="p-2 sm:p-2.5 rounded-2xl bg-[#272a33] text-white shadow-md">
             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#a7f3d0]" />
@@ -170,34 +181,101 @@ export default function PrintAndShareScreen() {
         </div>
       </div>
 
-      {/* ================= MAIN CONTENT (2 COLUMNS) ================= */}
-      <div className="w-full max-w-5xl flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-stretch justify-center my-auto py-2 z-10">
+      {/* ================= MAIN CONTENT (BOXOS STYLE LAYOUT) ================= */}
+      <div className="w-full max-w-6xl flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch justify-center my-auto py-1 z-10">
         
-        {/* Left Column: Photo Preview & Clean Print Status */}
-        <div className="flex flex-col items-center justify-between text-center p-3.5 sm:p-4 md:p-5 rounded-2xl sm:rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] h-full min-h-0">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#fde047] text-[#272a33] border border-[#272a33] text-[11px] sm:text-xs font-bold font-mono-tech shrink-0">
-            <Sparkles className="w-3.5 h-3.5 text-[#272a33]" />
-            <span>HASIL CETAKAN FISIK ({targetCopies} LEMBAR)</span>
+        {/* ================= LEFT SECTION: LARGE MEDIA PREVIEW (7 COLS) ================= */}
+        <div className="md:col-span-7 flex flex-col items-center justify-between text-center p-3.5 sm:p-4 rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] h-full min-h-0">
+          
+          {/* Card Top Title & Badge */}
+          <div className="w-full flex justify-between items-center px-1 shrink-0">
+            <div className="flex items-center gap-2">
+              <h3 
+                className="text-sm sm:text-base font-black text-[#343a59] uppercase tracking-tight"
+                style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
+              >
+                {activeTab === 'photo' ? 'Hasil Foto' : 'Live Motion Video'}
+              </h3>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#fde047] text-[#272a33] border border-[#272a33] text-[10px] sm:text-[11px] font-bold font-mono-tech">
+              <Sparkles className="w-3 h-3 text-[#272a33]" />
+              <span>{isGrid4R ? 'FOTO 4R' : `TWIN STRIP (${targetCopies} LEMBAR)`}</span>
+            </div>
           </div>
 
-          {/* Photo Render Preview - Expanded to take full available height */}
-          <div className="flex-1 min-h-0 my-2 sm:my-3 flex items-center justify-center w-full">
-            <div className="relative h-full max-h-[38vh] sm:max-h-[42vh] md:max-h-[44vh] rounded-xl sm:rounded-2xl shadow-[5px_5px_0px_#272a33] border-2 sm:border-3 border-[#272a33] overflow-hidden bg-slate-900 flex items-center justify-center">
-              {finalRenderedPhoto ? (
-                <img 
-                  src={finalRenderedPhoto} 
-                  alt="Final Rendered Photo Strip" 
-                  className="h-full w-auto max-h-[38vh] sm:max-h-[42vh] md:max-h-[44vh] object-contain block"
-                />
-              ) : (
-                <div className="w-32 h-64 bg-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-xs">
-                  Memproses Foto...
+          {/* Center Large Preview Frame */}
+          <div className="flex-1 min-h-0 my-2 flex items-center justify-center w-full">
+            <div className="relative h-full max-h-[44vh] sm:max-h-[48vh] w-full p-2 sm:p-3 bg-[#faf6ea] border-2 sm:border-3 border-[#272a33] rounded-2xl shadow-[4px_4px_0px_#272a33] flex items-center justify-center overflow-hidden">
+              
+              {/* TAB 1: FOTO STRIP PREVIEW (TWIN STRIP LIKE BOXOS) */}
+              {activeTab === 'photo' && (
+                finalRenderedPhoto ? (
+                  <div className="flex items-center justify-center gap-2 sm:gap-4 h-full max-h-[42vh] sm:max-h-[46vh] animate-in fade-in duration-200">
+                    {/* Strip 1 */}
+                    <img 
+                      src={finalRenderedPhoto} 
+                      alt="Hasil Foto Strip 1" 
+                      className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain block rounded-lg shadow-md border border-[#272a33]/40 transform hover:scale-101 transition-transform"
+                    />
+                    
+                    {/* Strip 2 (Twin Strip Kembar if vertical strip) */}
+                    {!isGrid4R && (
+                      <img 
+                        src={finalRenderedPhoto} 
+                        alt="Hasil Foto Strip 2" 
+                        className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain block rounded-lg shadow-md border border-[#272a33]/40 transform hover:scale-101 transition-transform"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-32 h-64 bg-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-xs rounded-xl">
+                    Memproses Foto...
+                  </div>
+                )
+              )}
+
+              {/* TAB 2: LIVE MOTION VIDEO / GIF PREVIEW */}
+              {activeTab === 'motion' && (
+                <div className="flex items-center justify-center h-full max-h-[42vh] sm:max-h-[46vh] w-full animate-in fade-in duration-200">
+                  {motionVideoSrc ? (
+                    <div className="relative h-full max-h-[40vh] sm:max-h-[44vh] flex items-center justify-center">
+                      <video 
+                        src={motionVideoSrc} 
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                        className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain rounded-lg shadow-md border border-[#272a33]/40 block"
+                      />
+                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm font-mono-tech">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                        <span>LIVE MOTION</span>
+                      </div>
+                    </div>
+                  ) : gifSrc ? (
+                    <div className="relative h-full max-h-[40vh] sm:max-h-[44vh] flex items-center justify-center">
+                      <img 
+                        src={gifSrc} 
+                        alt="GIF Boomerang Preview" 
+                        className="h-full w-auto max-h-[40vh] sm:max-h-[44vh] object-contain rounded-lg shadow-md border border-[#272a33]/40 block"
+                      />
+                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-purple-500 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm font-mono-tech">
+                        <span>GIF BOOMERANG</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-500 text-xs p-6 bg-white/70 rounded-xl border border-dashed border-slate-300">
+                      <Film className="w-8 h-8 text-slate-400 mb-2 animate-bounce" />
+                      <span>Membuat Live Motion Video...</span>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Printing Overlay Animation */}
               {isPrinting && (
-                <div className="absolute inset-0 bg-[#272a33]/90 backdrop-blur-xs flex flex-col items-center justify-center p-3 animate-in fade-in duration-200">
+                <div className="absolute inset-0 bg-[#272a33]/90 backdrop-blur-xs flex flex-col items-center justify-center p-3 animate-in fade-in duration-200 z-30">
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-3 border-amber-300 border-t-transparent animate-spin mb-2" />
                   <div className="flex flex-col items-center">
                     <span 
@@ -220,52 +298,43 @@ export default function PrintAndShareScreen() {
             </div>
           </div>
 
-          {/* ================= CLEAN LIVE PRINT STATUS CARD ================= */}
-          <div className="w-full shrink-0 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-[#faf6ea] border-2 border-[#272a33] space-y-1.5 text-left">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-1.5">
-                <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600" />
-                <span className="text-[11px] sm:text-xs font-black text-[#272a33] uppercase">
-                  Status Cetak Otomatis
-                </span>
-              </div>
-              <span className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full font-mono-tech border ${
-                isPrinting 
-                  ? 'bg-amber-100 text-amber-900 border-amber-300 animate-pulse' 
-                  : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-              }`}>
-                {isPrinting ? '⏳ Proses Mencetak...' : `✓ ${hasPrintedCount || targetCopies} Lembar Tercetak`}
-              </span>
-            </div>
+          {/* 2 TOGGLE BUTTONS (BOXOS STYLE: [ Foto ] & [ GIF / Motion ]) */}
+          <div className="inline-flex items-center p-1 bg-[#272a33]/10 border-2 border-[#272a33] rounded-full shadow-[2px_2px_0px_#272a33] gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('photo')}
+              className={`px-5 sm:px-6 py-1.5 rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'photo'
+                  ? 'bg-[#272a33] text-[#fde047] shadow-sm font-black'
+                  : 'bg-transparent text-[#272a33] hover:bg-white/60 font-semibold'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Foto</span>
+            </button>
 
-            <p className="text-[10px] sm:text-[11px] text-slate-600 leading-snug">
-              Fotomu otomatis dicetak <strong>{targetCopies} lembar</strong> sesuai pesanan di awal. Silakan ambil foto fisik di tray printer bagian bawah kiosk.
-            </p>
-
-            {/* Reprint Operator / Emergency button */}
-            <div className="pt-1.5 border-t border-slate-200/80 flex items-center justify-between">
-              <span className="text-[9px] sm:text-[10px] text-slate-500 font-mono-tech">
-                Sisa Kertas: {paperRemaining} lbr
-              </span>
-              <button
-                type="button"
-                disabled={isPrinting || paperRemaining <= 0}
-                onClick={() => handleReprint(1)}
-                className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-[#272a33] border border-slate-300 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all disabled:opacity-40"
-                title="Cetak ulang jika ada kertas macet atau rusak"
-              >
-                <RefreshCw className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-600" />
-                <span>Cetak Ulang (+1 Lbr)</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('motion')}
+              className={`px-5 sm:px-6 py-1.5 rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'motion'
+                  ? 'bg-[#272a33] text-[#fde047] shadow-sm font-black'
+                  : 'bg-transparent text-[#272a33] hover:bg-white/60 font-semibold'
+              }`}
+            >
+              <Film className="w-3.5 h-3.5 text-purple-600" />
+              <span>GIF / Motion</span>
+            </button>
           </div>
         </div>
 
-        {/* Right Column: QR Code Softfile Download */}
-        <div className="flex flex-col items-center justify-between text-center p-3.5 sm:p-4 md:p-5 rounded-2xl sm:rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] h-full min-h-0">
+        {/* ================= RIGHT SECTION: QR CODE & AUTO-PRINT STATUS (5 COLS) ================= */}
+        <div className="md:col-span-5 flex flex-col justify-between p-3.5 sm:p-4 rounded-3xl bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] h-full min-h-0 text-center">
+          
+          {/* Header Info */}
           <div className="shrink-0 flex flex-col items-center">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#e4ecfc] text-[#272a33] border border-[#272a33] text-[11px] sm:text-xs font-bold font-mono-tech mb-2">
-              <QrCode className="w-3.5 h-3.5 text-blue-600" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#e4ecfc] text-[#272a33] border border-[#272a33] text-[10px] sm:text-[11px] font-bold font-mono-tech mb-1">
+              <QrCode className="w-3 h-3 text-blue-600" />
               <span>
                 {softfileInfo?.isPublicCloud 
                   ? '🌐 ONLINE 4G/5G AKTIF' 
@@ -274,53 +343,87 @@ export default function PrintAndShareScreen() {
             </div>
 
             <h3 
-              className="text-base sm:text-lg md:text-xl font-black text-[#343a59] mb-0.5 uppercase tracking-tight"
+              className="text-sm sm:text-base font-black text-[#343a59] mb-0.5 uppercase tracking-tight"
               style={{ fontFamily: "'Dela Gothic One', 'Bungee', sans-serif" }}
             >
               Scan QR Code dengan HP
             </h3>
-            <p className="text-slate-600 text-[11px] sm:text-xs mb-1 font-medium max-w-xs leading-snug">
-              Unduh <strong>Paket Lengkap Softfile</strong>: Foto Strip HD, Live Motion Video, GIF Boomerang, & Pose Satuan.
+            <p className="text-slate-600 text-[10px] sm:text-[11px] font-medium max-w-xs leading-tight">
+              Unduh Softfile HD: Foto Strip, Live Motion Video, & GIF Boomerang.
             </p>
           </div>
 
-          {/* QR Code Frame - Centered and nicely sized */}
-          <div className="flex-1 min-h-0 my-2 sm:my-3 flex items-center justify-center">
-            <div className="p-3 bg-white rounded-xl sm:rounded-2xl border-2 sm:border-3 border-[#272a33] shadow-[4px_4px_0px_#272a33]">
+          {/* QR Code Frame */}
+          <div className="flex-1 min-h-0 my-1.5 flex items-center justify-center">
+            <div className="p-2.5 bg-white rounded-xl sm:rounded-2xl border-2 sm:border-3 border-[#272a33] shadow-[3px_3px_0px_#272a33]">
               {softfileInfo?.qrDataUrl ? (
                 <img 
                   src={softfileInfo.qrDataUrl} 
                   alt="Scan to Download Softfile" 
-                  className="w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 max-h-[25vh] object-contain block"
+                  className="w-28 h-28 sm:w-36 sm:h-36 max-h-[19vh] object-contain block"
                 />
               ) : (
-                <div className="w-32 h-32 sm:w-40 sm:h-40 bg-slate-200 animate-pulse rounded-lg" />
+                <div className="w-28 h-28 sm:w-36 sm:h-36 bg-slate-200 animate-pulse rounded-lg" />
               )}
             </div>
           </div>
 
-          {/* Softfile Preview & Local Download Button */}
-          <div className="w-full shrink-0 flex flex-col gap-1.5">
-            {softfileInfo?.id && (
-              <button
-                onClick={() => setViewingSoftfileId(softfileInfo.id)}
-                className="w-full py-2.5 px-3 rounded-xl sm:rounded-2xl bg-[#e4ecfc] hover:bg-[#d0e0fa] text-[#272a33] border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] font-display font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all transform hover:scale-101 active:scale-98 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5 text-blue-600" />
-                <span>Buka Galeri Unduh di Komputer Kiosk</span>
-                <ExternalLink className="w-3 h-3 text-blue-600" />
-              </button>
-            )}
+          {/* Kiosk Download Button */}
+          {softfileInfo?.id && (
+            <button
+              onClick={() => setViewingSoftfileId(softfileInfo.id)}
+              className="w-full py-2 px-3 rounded-xl bg-[#e4ecfc] hover:bg-[#d0e0fa] text-[#272a33] border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] font-display font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1.5 transition-all transform hover:scale-101 active:scale-98 cursor-pointer shrink-0"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600" />
+              <span>Buka Galeri Unduh di Komputer Kiosk</span>
+              <ExternalLink className="w-3 h-3 text-blue-600" />
+            </button>
+          )}
 
-            <p className="text-[9px] sm:text-[10px] text-slate-500">
-              *Tautan QR code akan aktif selama acara berlangsung
+          {/* ================= CLEAN LIVE PRINT STATUS CARD ================= */}
+          <div className="w-full mt-2 p-2.5 rounded-xl sm:rounded-2xl bg-[#faf6ea] border-2 border-[#272a33] space-y-1 text-left shrink-0">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-1.5">
+                <Printer className="w-3.5 h-3.5 text-purple-600" />
+                <span className="text-[10px] sm:text-[11px] font-black text-[#272a33] uppercase">
+                  Status Cetak Otomatis
+                </span>
+              </div>
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full font-mono-tech border ${
+                isPrinting 
+                  ? 'bg-amber-100 text-amber-900 border-amber-300 animate-pulse' 
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+              }`}>
+                {isPrinting ? '⏳ Proses Cetak...' : `✓ ${hasPrintedCount || targetCopies} Lembar`}
+              </span>
+            </div>
+
+            <p className="text-[9px] sm:text-[10px] text-slate-600 leading-tight">
+              Dicetak <strong>{targetCopies} lembar</strong> di tray printer bagian bawah.
             </p>
+
+            {/* Reprint Operator button */}
+            <div className="pt-1 border-t border-slate-200/80 flex items-center justify-between">
+              <span className="text-[9px] text-slate-500 font-mono-tech">
+                Sisa: {paperRemaining} lbr
+              </span>
+              <button
+                type="button"
+                disabled={isPrinting || paperRemaining <= 0}
+                onClick={() => handleReprint(1)}
+                className="px-2 py-0.5 rounded-lg bg-white hover:bg-slate-100 text-[#272a33] border border-slate-300 text-[9px] font-bold flex items-center gap-1 cursor-pointer transition-all disabled:opacity-40"
+                title="Cetak ulang jika ada kertas macet atau rusak"
+              >
+                <RefreshCw className="w-2.5 h-2.5 text-purple-600" />
+                <span>Cetak Ulang (+1)</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ================= BOTTOM ACTION BAR ================= */}
-      <div className="w-full max-w-5xl flex justify-between items-center pt-2.5 border-t-2 border-[#272a33]/20 shrink-0 z-20">
+      <div className="w-full max-w-6xl flex justify-between items-center pt-2 border-t-2 border-[#272a33]/20 shrink-0 z-20">
         <div className="flex items-center gap-2">
           <span className="text-[11px] sm:text-xs text-slate-600 font-medium hidden sm:inline">
             Terima kasih telah berfoto bersama SnapBooth!
