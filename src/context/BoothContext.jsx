@@ -101,6 +101,7 @@ export function BoothProvider({ children }) {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [viewingSoftfileId, setViewingSoftfileId] = useState(null);
+  const [sessionCopies, setSessionCopies] = useState(() => Number(eventSettings.defaultPrintCopies) || 2);
 
   // Clean expired photos on mount
   useEffect(() => {
@@ -337,8 +338,30 @@ export function BoothProvider({ children }) {
     return generated;
   };
 
+  // Helper to calculate total session cost including extra copies
+  const calculateSessionCost = (copiesCount = sessionCopies) => {
+    const basePrice = Number(eventSettings.price) || 35000;
+    const defaultCopies = Math.max(1, Number(eventSettings.defaultPrintCopies) || 2);
+    const count = copiesCount || defaultCopies;
+    const extraCopiesCount = Math.max(0, count - defaultCopies);
+    const isPaidExtraMode = eventSettings.extraCopyMode === 'paid';
+    const extraCopyPrice = Number(eventSettings.extraCopyPrice) || 10000;
+    const extraCost = isPaidExtraMode ? (extraCopiesCount * extraCopyPrice) : 0;
+    const totalBeforeDiscount = basePrice + extraCost;
+    return {
+      basePrice,
+      defaultCopies,
+      chosenCopies: count,
+      extraCopiesCount,
+      extraCopyPrice,
+      isPaidExtraMode,
+      extraCost,
+      totalBeforeDiscount
+    };
+  };
+
   // Validate and apply voucher in payment screen
-  const validateAndApplyVoucher = (inputCode, basePrice = eventSettings.price) => {
+  const validateAndApplyVoucher = (inputCode, customBasePrice = null) => {
     const clean = (inputCode || '').trim().toUpperCase();
     if (!clean) {
       return { success: false, message: 'Masukkan kode voucher terlebih dahulu.' };
@@ -357,7 +380,8 @@ export function BoothProvider({ children }) {
       return { success: false, message: `Voucher "${clean}" sudah mencapai batas kuota pemakaian (${found.maxUses}x).` };
     }
 
-    const originalPrice = Number(basePrice) || 0;
+    const costBreakdown = calculateSessionCost();
+    const originalPrice = Number(customBasePrice !== null ? customBasePrice : costBreakdown.totalBeforeDiscount) || 0;
     let discountAmount = 0;
     let finalPrice = originalPrice;
     let isFree = false;
@@ -514,31 +538,44 @@ export function BoothProvider({ children }) {
     setFinalRenderedPhoto(null);
     setSoftfileInfo(null);
     setIsPrinting(false);
-
-    // If Event Mode is Free, jump directly to Frame Selection Screen
     setAppliedVoucher(null);
-    if (eventSettings.eventMode === 'free') {
-      setStep(STEPS.FRAME_SELECT);
-    } else {
-      setStep(STEPS.PAYMENT);
-    }
-  };
+    setSessionCopies(Number(eventSettings.defaultPrintCopies) || 2);
 
-  // After Payment Success
-  const handlePaymentSuccess = () => {
-    sounds.playSuccessChime();
+    // Always start at Frame Selection Screen
     setStep(STEPS.FRAME_SELECT);
   };
 
-  // Choose frame & proceed to camera
-  const handleSelectFrame = (template) => {
-    sounds.playButtonClick();
-    setSelectedFrame(template);
+  // After Payment Success -> Proceed to Camera
+  const handlePaymentSuccess = () => {
+    sounds.playSuccessChime();
     setCurrentPoseIndex(0);
     setCapturedPhotos([]);
     setCapturedVideos([]);
     setRetakeCounts({});
     setStep(STEPS.CAMERA);
+  };
+
+  // Choose frame & chosen copies -> proceed to Payment or Camera
+  const handleSelectFrameAndProceed = (template, chosenCopies) => {
+    sounds.playButtonClick();
+    if (template) setSelectedFrame(template);
+    const copiesCount = Number(chosenCopies) || sessionCopies || (Number(eventSettings.defaultPrintCopies) || 2);
+    setSessionCopies(copiesCount);
+
+    if (eventSettings.eventMode === 'free') {
+      setCurrentPoseIndex(0);
+      setCapturedPhotos([]);
+      setCapturedVideos([]);
+      setRetakeCounts({});
+      setStep(STEPS.CAMERA);
+    } else {
+      setStep(STEPS.PAYMENT);
+    }
+  };
+
+  // Choose frame legacy wrapper
+  const handleSelectFrame = (template) => {
+    handleSelectFrameAndProceed(template, sessionCopies);
   };
 
   // When a pose photo is captured
@@ -667,9 +704,10 @@ export function BoothProvider({ children }) {
       }
 
       // 7. Record Session to Analytics
+      const costBreakdown = calculateSessionCost();
       const isPaidMode = eventSettings.eventMode === 'paid';
-      const effectivePrice = appliedVoucher ? appliedVoucher.finalPrice : eventSettings.price;
-      const effectiveIsPaid = isPaidMode && (!appliedVoucher || !appliedVoucher.isFree);
+      const effectivePrice = appliedVoucher ? appliedVoucher.finalPrice : costBreakdown.totalBeforeDiscount;
+      const effectiveIsPaid = isPaidMode && (!appliedVoucher || !appliedVoucher.isFree) && effectivePrice > 0;
 
       recordCompletedSession({
         frameName: selectedFrame?.name || 'Standard Frame',
@@ -713,6 +751,7 @@ export function BoothProvider({ children }) {
     setSoftfileInfo(null);
     setIsPrinting(false);
     setAppliedVoucher(null);
+    setSessionCopies(Number(eventSettings.defaultPrintCopies) || 2);
   };
 
   return (
@@ -726,6 +765,9 @@ export function BoothProvider({ children }) {
         availableFrames,
         selectedFrame,
         setSelectedFrame,
+        sessionCopies,
+        setSessionCopies,
+        calculateSessionCost,
         addCustomFrame,
         deleteCustomFrameById,
         toggleFrameEnabled,
@@ -760,6 +802,7 @@ export function BoothProvider({ children }) {
         startNewSession,
         handlePaymentSuccess,
         handleSelectFrame,
+        handleSelectFrameAndProceed,
         handlePhotoCaptured,
         handleRetakePose,
         handleAcceptPose,
