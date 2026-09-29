@@ -242,9 +242,9 @@ export default function FrameSelectionScreen() {
             </div>
           </div>
 
-          {/* Quick Preset Buttons & Stepper */}
+          {/* Quick Preset Buttons & Stepper (Kelipatan 2: 2, 4, 6 Lembar) */}
           <div className="flex items-center gap-2">
-            {/* Presets */}
+            {/* Presets (2, 4, 6 Lembar) */}
             <div className="flex items-center gap-1.5">
               {presetOptions.map((opt) => {
                 const isSelected = chosenCopies === opt;
@@ -255,7 +255,7 @@ export default function FrameSelectionScreen() {
                     key={opt}
                     type="button"
                     onClick={() => setChosenCopies(opt)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black border-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black border-2 transition-all cursor-pointer flex items-center gap-1.5 ${
                       isSelected
                         ? 'bg-[#272a33] text-[#fef08a] border-[#272a33] shadow-[2px_2px_0px_#272a33] scale-105'
                         : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
@@ -263,7 +263,7 @@ export default function FrameSelectionScreen() {
                   >
                     <span>{opt} Lembar</span>
                     {extraPriceOpt > 0 && (
-                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono-tech font-bold ${
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono-tech font-bold ${
                         isSelected ? 'bg-amber-300 text-[#272a33]' : 'bg-emerald-100 text-emerald-800'
                       }`}>
                         +Rp {(extraPriceOpt / 1000)}k
@@ -274,14 +274,14 @@ export default function FrameSelectionScreen() {
               })}
             </div>
 
-            {/* Stepper (+ / -) -> Min copies is locked to minCopies (2) */}
+            {/* Stepper (+ / -) -> Step by 2 (2 -> 4 -> 6) */}
             <div className="flex items-center bg-slate-100 rounded-xl border border-slate-300 p-0.5 ml-1">
               <button
                 type="button"
-                onClick={() => setChosenCopies(Math.max(minCopies, chosenCopies - 1))}
+                onClick={() => setChosenCopies(Math.max(minCopies, chosenCopies - 2))}
                 disabled={chosenCopies <= minCopies}
                 className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-800 font-bold disabled:opacity-30 cursor-pointer"
-                title={chosenCopies <= minCopies ? `Minimal cetak adalah ${minCopies} lembar` : 'Kurangi 1 lembar'}
+                title={chosenCopies <= minCopies ? `Minimal cetak adalah ${minCopies} lembar` : 'Kurangi 2 lembar'}
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
@@ -290,10 +290,10 @@ export default function FrameSelectionScreen() {
               </span>
               <button
                 type="button"
-                onClick={() => setChosenCopies(Math.min(maxCopies, chosenCopies + 1))}
+                onClick={() => setChosenCopies(Math.min(maxCopies, chosenCopies + 2))}
                 disabled={chosenCopies >= maxCopies}
                 className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-800 font-bold disabled:opacity-30 cursor-pointer"
-                title={chosenCopies >= maxCopies ? `Maksimal cetak adalah ${maxCopies} lembar` : 'Tambah 1 lembar'}
+                title={chosenCopies >= maxCopies ? `Maksimal cetak adalah ${maxCopies} lembar` : 'Tambah 2 lembar'}
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
