@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBooth } from '../context/BoothContext';
-import { LayoutGrid, Check, ArrowRight, ArrowLeft, Sparkles, Printer, Plus, Minus, Layers, Tag } from 'lucide-react';
+import { LayoutGrid, Check, ArrowRight, ArrowLeft, Sparkles, Printer } from 'lucide-react';
 
 export default function FrameSelectionScreen() {
   const { 
@@ -20,7 +20,7 @@ export default function FrameSelectionScreen() {
   const maxCopies = Math.max(defaultCopies, Number(eventSettings.maxPrintCopies) || 6);
   const allowSelectCopies = eventSettings.allowGuestSelectCopies !== false;
   const isPaidExtra = eventSettings.extraCopyMode === 'paid';
-  const extraPricePerCopy = Number(eventSettings.extraCopyPrice) || 10000;
+  const extraPricePerPair = Number(eventSettings.extraCopyPrice) || 20000;
 
   const [chosenCopies, setChosenCopies] = useState(() => Math.max(minCopies, Number(sessionCopies) || defaultCopies));
 
@@ -33,15 +33,15 @@ export default function FrameSelectionScreen() {
 
   const framesToDisplay = availableFrames && availableFrames.length > 0 ? availableFrames : [selectedFrame];
 
-  // Price Calculation for Display: Base (35k) + (Extra Copies * 10k)
+  // Price Calculation for Display: Base (35k) + (Extra Pairs * 20k)
   const basePrice = Number(eventSettings.price) || 35000;
-  const extraCopiesCount = Math.max(0, chosenCopies - defaultCopies);
-  const extraCost = isPaidExtra ? (extraCopiesCount * extraPricePerCopy) : 0;
+  const extraPairsCount = Math.max(0, Math.floor((chosenCopies - defaultCopies) / 2));
+  const extraCost = isPaidExtra ? (extraPairsCount * extraPricePerPair) : 0;
   const estimatedTotal = basePrice + extraCost;
   const isFreeMode = eventSettings.eventMode === 'free';
 
-  // Available preset copy options (e.g. 2, 4, 6)
-  const presetOptions = [2, 4, 6].filter(n => n >= minCopies && n <= maxCopies);
+  // Available preset copy options (e.g. 2, 4, 6, 8)
+  const presetOptions = [2, 4, 6, 8].filter(n => n >= minCopies && n <= maxCopies);
   if (!presetOptions.includes(defaultCopies)) presetOptions.unshift(defaultCopies);
 
   return (
@@ -228,75 +228,35 @@ export default function FrameSelectionScreen() {
             <div>
               <div className="text-xs font-black text-[#272a33] uppercase flex items-center gap-1.5 font-display">
                 <span>PILIH JUMLAH CETAK FOTO</span>
-                {isPaidExtra && (
-                  <span className="text-[10px] font-mono-tech font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    Bawaan: {defaultCopies} Lbr
-                  </span>
-                )}
               </div>
               <p className="text-[11px] text-slate-500 font-medium">
                 {isPaidExtra 
-                  ? `Paket standar sudah termasuk ${defaultCopies} lembar cetak. Tambahan: +Rp ${extraPricePerCopy.toLocaleString('id-ID')}/lbr` 
+                  ? `Paket standar sudah termasuk ${defaultCopies} lembar cetak. Tambahan: +Rp ${extraPricePerPair.toLocaleString('id-ID')} / 2 lembar` 
                   : `Tentukan berapa lembar strip foto fisik yang ingin kamu cetak`}
               </p>
             </div>
           </div>
 
-          {/* Quick Preset Buttons & Stepper (Kelipatan 2: 2, 4, 6 Lembar) */}
+          {/* Quick Preset Buttons (Kelipatan 2: 2, 4, 6 Lembar) */}
           <div className="flex items-center gap-2">
-            {/* Presets (2, 4, 6 Lembar) */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {presetOptions.map((opt) => {
                 const isSelected = chosenCopies === opt;
-                const extraForOpt = Math.max(0, opt - defaultCopies);
-                const extraPriceOpt = isPaidExtra ? extraForOpt * extraPricePerCopy : 0;
                 return (
                   <button
                     key={opt}
                     type="button"
                     onClick={() => setChosenCopies(opt)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black border-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-4 py-2 rounded-xl text-xs font-black border-2 transition-all cursor-pointer flex items-center justify-center font-display ${
                       isSelected
                         ? 'bg-[#272a33] text-[#fef08a] border-[#272a33] shadow-[2px_2px_0px_#272a33] scale-105'
                         : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
                     }`}
                   >
                     <span>{opt} Lembar</span>
-                    {extraPriceOpt > 0 && (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono-tech font-bold ${
-                        isSelected ? 'bg-amber-300 text-[#272a33]' : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        +Rp {(extraPriceOpt / 1000)}k
-                      </span>
-                    )}
                   </button>
                 );
               })}
-            </div>
-
-            {/* Stepper (+ / -) -> Step by 2 (2 -> 4 -> 6) */}
-            <div className="flex items-center bg-slate-100 rounded-xl border border-slate-300 p-0.5 ml-1">
-              <button
-                type="button"
-                onClick={() => setChosenCopies(Math.max(minCopies, chosenCopies - 2))}
-                disabled={chosenCopies <= minCopies}
-                className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-800 font-bold disabled:opacity-30 cursor-pointer"
-                title={chosenCopies <= minCopies ? `Minimal cetak adalah ${minCopies} lembar` : 'Kurangi 2 lembar'}
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <span className="w-8 text-center text-xs font-black font-mono-tech text-[#272a33]">
-                {chosenCopies}x
-              </span>
-              <button
-                type="button"
-                onClick={() => setChosenCopies(Math.min(maxCopies, chosenCopies + 2))}
-                disabled={chosenCopies >= maxCopies}
-                className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-800 font-bold disabled:opacity-30 cursor-pointer"
-                title={chosenCopies >= maxCopies ? `Maksimal cetak adalah ${maxCopies} lembar` : 'Tambah 2 lembar'}
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
             </div>
           </div>
         </div>

@@ -354,7 +354,7 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
       maxPrintCopies: Number(formData.maxPrintCopies) || 4,
       allowGuestSelectCopies: formData.allowGuestSelectCopies !== false,
       extraCopyMode: formData.extraCopyMode || 'free',
-      extraCopyPrice: Number(formData.extraCopyPrice) || 10000,
+      extraCopyPrice: Number(formData.extraCopyPrice) || 20000,
       watermarkImage: formData.watermarkImage ?? null,
       enableWatermark: formData.enableWatermark !== false,
       watermarkPosition: formData.watermarkPosition || 'bottom-right',
@@ -1742,10 +1742,8 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
                       onChange={e => setFormData({ ...formData, defaultPrintCopies: Number(e.target.value) })}
                       className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                     >
-                      <option value="1">1 Lembar</option>
                       <option value="2">2 Lembar (Standar Sepasang Strip 2x6)</option>
-                      <option value="3">3 Lembar</option>
-                      <option value="4">4 Lembar</option>
+                      <option value="4">4 Lembar (2 Pasang)</option>
                     </select>
                   </div>
 
@@ -1754,12 +1752,11 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
                       Batas Maksimal Cetak per Sesi
                     </label>
                     <select
-                      value={formData.maxPrintCopies || 4}
+                      value={formData.maxPrintCopies || 6}
                       onChange={e => setFormData({ ...formData, maxPrintCopies: Number(e.target.value) })}
                       className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                     >
                       <option value="2">Maks 2 Lembar</option>
-                      <option value="3">Maks 3 Lembar</option>
                       <option value="4">Maks 4 Lembar (Rekomendasi)</option>
                       <option value="6">Maks 6 Lembar (Grup Besar)</option>
                       <option value="8">Maks 8 Lembar</option>
@@ -1776,7 +1773,7 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
                       className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#272a33] text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                     >
                       <option value="free">🎉 Gratis (Included s/d Batas Maksimal)</option>
-                      <option value="paid">💰 Berbayar (Upselling per Lembar Tambahan)</option>
+                      <option value="paid">💰 Berbayar (Upselling per 2 Lembar Tambahan)</option>
                     </select>
                   </div>
                 </div>
@@ -1785,17 +1782,17 @@ _Laporan digenerate otomatis oleh SnapBooth Kiosk Pro._`;
                   <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-amber-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                       <span className="text-xs font-black text-amber-950 block">
-                        Tarif per Lembar Tambahan (Upsell Price)
+                        Tarif per 2 Lembar Tambahan (Upsell Price)
                       </span>
                       <p className="text-[11px] text-amber-800">
-                        Dikenakan untuk setiap lembar yang melebihi jumlah default ({formData.defaultPrintCopies || 2} lembar)
+                        Dikenakan untuk setiap kelipatan 2 lembar yang melebihi jumlah default ({formData.defaultPrintCopies || 2} lembar)
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-700">Rp</span>
                       <input
                         type="number"
-                        value={formData.extraCopyPrice || 10000}
+                        value={formData.extraCopyPrice || 20000}
                         onChange={e => setFormData({ ...formData, extraCopyPrice: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border-2 border-[#272a33] text-xs font-mono-tech font-bold"
                         step="1000"

@@ -46,12 +46,12 @@ const DEFAULT_EVENT_SETTINGS = {
   attractDimming: 0, // 0 to 80 (%)
   attractShowDefaultTitle: true, // show/hide big SNAPBOOTH typography & stickers
   attractCustomCtaText: 'Click to Start', // custom button label
-  // Multi-Print & Extra Copies Configuration
-  defaultPrintCopies: 2, // Default copies printed per session (e.g. 2 for strip pair)
-  maxPrintCopies: 4, // Max copies guest can choose (1 to 6)
+  // Multi-Print & Extra Copies Configuration (Kelipatan 2)
+  defaultPrintCopies: 2, // Default copies printed per session (sepasang strip 2x6)
+  maxPrintCopies: 6, // Max copies guest can choose (2, 4, 6 Lembar)
   allowGuestSelectCopies: true, // Allow guests to adjust copies count
-  extraCopyMode: 'free', // 'free' | 'paid' (upselling per extra copy)
-  extraCopyPrice: 10000 // Price per additional copy
+  extraCopyMode: 'paid', // 'free' | 'paid' (upselling per 2 lembar tambahan)
+  extraCopyPrice: 20000 // Price per 2 additional copies (Rp 20.000 / 2 lembar)
 };
 
 export function BoothProvider({ children }) {
@@ -338,22 +338,23 @@ export function BoothProvider({ children }) {
     return generated;
   };
 
-  // Helper to calculate total session cost including extra copies
+  // Helper to calculate total session cost including extra copies (per 2 lembar / pair)
   const calculateSessionCost = (copiesCount = sessionCopies) => {
     const basePrice = Number(eventSettings.price) || 35000;
     const defaultCopies = Math.max(2, Number(eventSettings.defaultPrintCopies) || 2);
     const count = Math.max(defaultCopies, Number(copiesCount) || defaultCopies);
-    const extraCopiesCount = Math.max(0, count - defaultCopies);
+    const extraPairsCount = Math.max(0, Math.floor((count - defaultCopies) / 2));
     const isPaidExtraMode = eventSettings.extraCopyMode === 'paid';
-    const extraCopyPrice = Number(eventSettings.extraCopyPrice) || 10000;
-    const extraCost = isPaidExtraMode ? (extraCopiesCount * extraCopyPrice) : 0;
+    const extraPricePerPair = Number(eventSettings.extraCopyPrice) || 20000;
+    const extraCost = isPaidExtraMode ? (extraPairsCount * extraPricePerPair) : 0;
     const totalBeforeDiscount = basePrice + extraCost;
     return {
       basePrice,
       defaultCopies,
       chosenCopies: count,
-      extraCopiesCount,
-      extraCopyPrice,
+      extraCopiesCount: count - defaultCopies,
+      extraPairsCount,
+      extraCopyPrice: extraPricePerPair,
       isPaidExtraMode,
       extraCost,
       totalBeforeDiscount
