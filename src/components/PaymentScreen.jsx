@@ -97,12 +97,12 @@ export default function PaymentScreen() {
   const seconds = timeLeft % 60;
 
   return (
-    <div className="relative w-full h-screen flex flex-col justify-between items-center p-5 md:p-8 bg-grid-notebook text-slate-900 overflow-y-auto select-none">
+    <div className="relative w-full h-screen flex flex-col justify-between items-center p-3 sm:p-5 md:p-6 bg-grid-notebook text-slate-900 overflow-hidden select-none">
       
       {/* ================= BACKGROUND STICKER ORNAMENTS ================= */}
       {/* 1. Sparkle Star Kuning (Kiri Atas) */}
-      <div className="absolute top-24 sm:top-28 left-8 sm:left-12 md:left-16 z-0 pointer-events-none animate-float">
-        <svg className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 overflow-visible" viewBox="0 0 100 100" fill="none">
+      <div className="absolute top-20 sm:top-24 left-6 sm:left-12 md:left-16 z-0 pointer-events-none animate-float opacity-80">
+        <svg className="w-9 h-9 sm:w-11 sm:h-11 md:w-13 md:h-13 overflow-visible" viewBox="0 0 100 100" fill="none">
           <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#1e2336" transform="translate(4, 5)" />
           <path d="M 50 0 C 50 35 65 50 100 50 C 65 50 50 65 50 100 C 50 65 35 50 0 50 C 35 50 50 35 50 0 Z" fill="#fef08a" stroke="#1e2336" strokeWidth="6" strokeLinejoin="round" />
           <circle cx="50" cy="50" r="7" fill="#ffffff" />
@@ -110,8 +110,8 @@ export default function PaymentScreen() {
       </div>
 
       {/* 2. Retro 3D Heart Sticker (Kiri Tengah) */}
-      <div className="absolute top-[52%] left-6 sm:left-10 md:left-14 z-0 pointer-events-none animate-float-reverse">
-        <svg className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 overflow-visible" viewBox="0 0 100 100" fill="none">
+      <div className="absolute top-[52%] left-5 sm:left-10 md:left-14 z-0 pointer-events-none animate-float-reverse opacity-80">
+        <svg className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 overflow-visible" viewBox="0 0 100 100" fill="none">
           <path d="M 50 30 C 50 10 25 10 15 25 C 0 45 35 70 50 88 C 65 70 100 45 85 25 C 75 10 50 10 50 30 Z" fill="#1e2336" transform="translate(5, 5) rotate(-12 50 50)" />
           <path d="M 50 30 C 50 10 25 10 15 25 C 0 45 35 70 50 88 C 65 70 100 45 85 25 C 75 10 50 10 50 30 Z" fill="#fda4af" stroke="#1e2336" strokeWidth="6.5" strokeLinejoin="round" transform="rotate(-12 50 50)" />
           <path d="M 28 26 C 24 34 26 44 32 50" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" transform="rotate(-12 50 50)" />
@@ -119,8 +119,8 @@ export default function PaymentScreen() {
       </div>
 
       {/* 3. Retro 3D Camera Sticker (Kiri Bawah) */}
-      <div className="absolute bottom-20 left-10 sm:left-16 md:left-24 z-0 pointer-events-none animate-float">
-        <svg className="w-11 h-11 sm:w-13 sm:h-13 md:w-16 md:h-16 overflow-visible" viewBox="0 0 100 100" fill="none">
+      <div className="absolute bottom-16 left-8 sm:left-14 md:left-20 z-0 pointer-events-none animate-float opacity-80">
+        <svg className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 overflow-visible" viewBox="0 0 100 100" fill="none">
           <rect x="15" y="30" width="70" height="50" rx="12" fill="#1e2336" transform="translate(4, 5) rotate(-6 50 50)" />
           <rect x="15" y="30" width="70" height="50" rx="12" fill="#bdd2f5" stroke="#1e2336" strokeWidth="6" transform="rotate(-6 50 50)" />
           <rect x="35" y="18" width="30" height="15" rx="5" fill="#bdd2f5" stroke="#1e2336" strokeWidth="5" transform="rotate(-6 50 50)" />
@@ -131,8 +131,8 @@ export default function PaymentScreen() {
       </div>
 
       {/* 4. Retro 3D Daisy Smiley Flower (Kanan Atas) */}
-      <div className="absolute top-20 sm:top-24 right-10 sm:right-16 md:right-24 z-0 pointer-events-none animate-float-reverse">
-        <svg className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 overflow-visible" viewBox="0 0 100 100" fill="none">
+      <div className="absolute top-18 sm:top-22 right-8 sm:right-14 md:right-20 z-0 pointer-events-none animate-float-reverse opacity-80">
+        <svg className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 overflow-visible" viewBox="0 0 100 100" fill="none">
           <circle cx="54" cy="54" r="38" fill="#1e2336" />
           <circle cx="50" cy="50" r="38" fill="#fef08a" stroke="#1e2336" strokeWidth="6" />
           <circle cx="50" cy="50" r="20" fill="#e9d5ff" stroke="#1e2336" strokeWidth="5" />
@@ -143,33 +143,33 @@ export default function PaymentScreen() {
       </div>
 
       {/* 5. 3D Lightning Bolt (Kanan Tengah) */}
-      <div className="absolute top-[48%] right-6 sm:right-10 md:right-14 z-0 pointer-events-none animate-float">
-        <svg className="w-10 h-12 sm:w-12 sm:h-15 md:w-14 md:h-18 overflow-visible" viewBox="0 0 100 120" fill="none">
+      <div className="absolute top-[48%] right-5 sm:right-10 md:left-auto md:right-14 z-0 pointer-events-none animate-float opacity-80">
+        <svg className="w-9 h-11 sm:w-11 sm:h-13 md:w-13 md:h-16 overflow-visible" viewBox="0 0 100 120" fill="none">
           <path d="M 55 5 L 15 65 L 48 65 L 35 115 L 85 45 L 50 45 Z" fill="#1e2336" transform="translate(4, 5) rotate(8 50 60)" />
           <path d="M 55 5 L 15 65 L 48 65 L 35 115 L 85 45 L 50 45 Z" fill="#fde047" stroke="#1e2336" strokeWidth="6.5" strokeLinejoin="round" transform="rotate(8 50 60)" />
         </svg>
       </div>
 
       {/* ================= TOP HEADER ================= */}
-      <div className="w-full max-w-4xl flex justify-between items-center z-20">
+      <div className="w-full max-w-3xl flex justify-between items-center z-20">
         <button
           type="button"
           onClick={() => setStep(STEPS.FRAME_SELECT)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white hover:bg-slate-100 border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] text-xs font-bold text-[#272a33] cursor-pointer transition-all transform hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white hover:bg-slate-100 border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] text-xs font-bold text-[#272a33] cursor-pointer transition-all transform hover:scale-105 active:scale-95"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           <span>Ganti Frame / Lembar</span>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Batas Waktu Timer */}
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#272a33] text-amber-300 font-mono-tech text-xs font-bold shadow-md">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#272a33] text-amber-300 font-mono-tech text-xs font-bold shadow-md">
             <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span>Waktu: {minutes}:{seconds < 10 ? `0${seconds}` : seconds}</span>
           </div>
 
           {/* Page 03 Badge */}
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#272a33] text-white shadow-md">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#272a33] text-white shadow-md">
             <span className="text-xs font-bold tracking-wide font-display pl-1">Page</span>
             <div className="flex items-center justify-center bg-white text-[#272a33] font-black text-xs px-2 py-0.5 rounded-full font-mono-tech">
               03
@@ -179,18 +179,18 @@ export default function PaymentScreen() {
       </div>
 
       {/* ================= CENTER PAYMENT & ORDER SUMMARY CARD ================= */}
-      <div className="w-full max-w-lg bg-white border-3 border-[#272a33] shadow-[8px_8px_0px_#272a33] p-5 sm:p-6 rounded-3xl flex flex-col items-center text-center my-auto z-10 transition-all max-h-[88vh] overflow-y-auto">
+      <div className="w-full max-w-[460px] bg-white border-3 border-[#272a33] shadow-[6px_6px_0px_#272a33] p-4 sm:p-5 rounded-3xl flex flex-col items-center text-center my-auto z-10 transition-all max-h-[80vh] overflow-y-auto">
         
         {/* Header Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e4ecfc] border border-[#272a33] text-[#272a33] text-xs font-bold font-mono-tech mb-2">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#e4ecfc] border border-[#272a33] text-[#272a33] text-[11px] font-bold font-mono-tech mb-1">
           {isVipFree ? (
             <>
-              <Crown className="w-3.5 h-3.5 text-amber-500" />
+              <Crown className="w-3 h-3 text-amber-500" />
               <span>AKSES VIP KHUSUS</span>
             </>
           ) : (
             <>
-              <QrCode className="w-3.5 h-3.5 text-[#343a59]" />
+              <QrCode className="w-3 h-3 text-[#343a59]" />
               <span>PEMBAYARAN QRIS RESMI</span>
             </>
           )}
@@ -198,12 +198,12 @@ export default function PaymentScreen() {
 
         {/* Title */}
         <h2 
-          className="text-xl sm:text-2xl font-black text-[#343a59] mb-0.5 leading-tight tracking-tight"
+          className="text-lg sm:text-xl font-black text-[#343a59] mb-0.5 leading-tight tracking-tight"
           style={{ fontFamily: "'Dela Gothic One', 'Bungee', 'Fredoka', sans-serif" }}
         >
           {isVipFree ? 'VOUCHER VIP BERHASIL DIAKTIFKAN!' : 'SCAN QRIS UNTUK MULAI'}
         </h2>
-        <p className="text-slate-600 text-xs mb-3 font-medium">
+        <p className="text-slate-600 text-[11px] mb-2 font-medium">
           {isVipFree 
             ? 'Sesi foto ini gratis untuk panitia / tamu undangan VIP.'
             : 'Bisa gunakan GoPay, OVO, Dana, ShopeePay, BCA, Mandiri, dll.'
@@ -212,44 +212,44 @@ export default function PaymentScreen() {
 
         {/* QR Code OR VIP Golden Box */}
         {isVipFree ? (
-          <div className="w-full bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 p-5 rounded-3xl border-3 border-[#272a33] shadow-[4px_4px_0px_#272a33] flex flex-col items-center gap-2.5 my-2 animate-bounce-subtle">
-            <div className="w-14 h-14 rounded-2xl bg-amber-400 border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] flex items-center justify-center text-[#272a33]">
-              <Crown className="w-8 h-8 text-[#272a33]" />
+          <div className="w-full bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 p-4 rounded-2xl border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] flex flex-col items-center gap-2 my-1 animate-bounce-subtle">
+            <div className="w-12 h-12 rounded-xl bg-amber-400 border-2 border-[#272a33] shadow-[2px_2px_0px_#272a33] flex items-center justify-center text-[#272a33]">
+              <Crown className="w-7 h-7 text-[#272a33]" />
             </div>
             <div>
-              <span className="text-[10px] font-mono-tech font-black tracking-widest text-amber-900 uppercase">
+              <span className="text-[9px] font-mono-tech font-black tracking-widest text-amber-900 uppercase">
                 VIP ALL-ACCESS PASS
               </span>
-              <h3 className="text-base font-black text-[#272a33] font-display">
+              <h3 className="text-sm font-black text-[#272a33] font-display">
                 {appliedVoucher?.description || 'Tamu VIP / Panitia Event'}
               </h3>
-              <p className="text-xs text-amber-800 font-semibold mt-0.5">
+              <p className="text-[11px] text-amber-800 font-semibold mt-0.5">
                 Kode Kupon: <span className="font-mono-tech font-black underline">{appliedVoucher?.code}</span>
               </p>
             </div>
             
-            <div className="px-3.5 py-1 rounded-full bg-[#272a33] text-amber-300 font-bold text-xs flex items-center gap-1.5 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="px-3 py-0.5 rounded-full bg-[#272a33] text-amber-300 font-bold text-[11px] flex items-center gap-1.5 shadow-sm">
+              <Sparkles className="w-3 h-3" />
               <span>Biaya Sesi: Rp 0 (100% GRATIS)</span>
             </div>
           </div>
         ) : (
-          <div className="bg-[#fcfbf7] p-3 rounded-2xl border-2 border-[#272a33] shadow-inner flex flex-col items-center">
-            <div className="w-full flex justify-between items-center mb-1 px-1 border-b border-slate-300 pb-1">
-              <span className="text-[11px] font-black text-[#272a33] tracking-wider">QRIS</span>
-              <span className="text-[10px] font-bold text-slate-600">GPN</span>
+          <div className="bg-[#fcfbf7] p-2 sm:p-2.5 rounded-2xl border-2 border-[#272a33] shadow-inner flex flex-col items-center">
+            <div className="w-full flex justify-between items-center mb-0.5 px-1 border-b border-slate-300 pb-0.5">
+              <span className="text-[10px] font-black text-[#272a33] tracking-wider">QRIS</span>
+              <span className="text-[9px] font-bold text-slate-600">GPN</span>
             </div>
 
             {qrisQrUrl ? (
-              <img src={qrisQrUrl} alt="QRIS Code" className="w-40 h-40 sm:w-44 sm:h-44 object-contain" />
+              <img src={qrisQrUrl} alt="QRIS Code" className="w-32 h-32 sm:w-36 sm:h-36 object-contain" />
             ) : (
-              <div className="w-40 h-40 sm:w-44 sm:h-44 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-slate-600 animate-spin" />
+              <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
+                <Loader2 className="w-7 h-7 text-slate-600 animate-spin" />
               </div>
             )}
 
-            <div className="w-full text-center mt-1 border-t border-slate-300 pt-0.5">
-              <span className="text-[9px] font-bold text-[#272a33] tracking-wide font-mono-tech">
+            <div className="w-full text-center mt-0.5 border-t border-slate-300 pt-0.5">
+              <span className="text-[8.5px] font-bold text-[#272a33] tracking-wide font-mono-tech">
                 SNAPBOOTH • {eventSettings.title}
               </span>
             </div>
@@ -257,36 +257,36 @@ export default function PaymentScreen() {
         )}
 
         {/* ================= ORDER DETAILS & PRICE BREAKDOWN ================= */}
-        <div className="mt-3 w-full p-3 rounded-2xl bg-[#f4eedb] border-2 border-[#272a33] text-left space-y-1.5">
-          <div className="flex justify-between items-center text-xs pb-1.5 border-b border-[#272a33]/15">
+        <div className="mt-2 w-full p-2.5 rounded-xl bg-[#f4eedb] border-2 border-[#272a33] text-left space-y-1">
+          <div className="flex justify-between items-center text-[11px] pb-1 border-b border-[#272a33]/15">
             <div className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-blue-600" />
-              <span className="font-bold text-slate-800">
+              <Layers className="w-3 h-3 text-blue-600" />
+              <span className="font-bold text-slate-800 line-clamp-1">
                 {selectedFrame?.name || 'Frame Photobooth'} ({selectedFrame?.poses || 3} Pose)
               </span>
             </div>
-            <span className="font-mono-tech font-bold text-slate-700">
+            <span className="font-mono-tech font-bold text-slate-700 shrink-0 pl-1">
               Rp {costBreakdown.basePrice.toLocaleString('id-ID')}
             </span>
           </div>
 
-          <div className="flex justify-between items-center text-xs">
+          <div className="flex justify-between items-center text-[11px]">
             <div className="flex items-center gap-1.5">
-              <Printer className="w-3.5 h-3.5 text-purple-600" />
+              <Printer className="w-3 h-3 text-purple-600" />
               <span className="font-medium text-slate-700">
                 Total Cetak: <strong>{costBreakdown.chosenCopies} Lembar</strong>
-                {costBreakdown.extraCopiesCount > 0 && ` (${costBreakdown.extraCopiesCount} lbr ekstra)`}
+                {costBreakdown.extraCopiesCount > 0 && ` (+${costBreakdown.extraCopiesCount} lbr)`}
               </span>
             </div>
-            <span className="font-mono-tech font-bold text-slate-700">
+            <span className="font-mono-tech font-bold text-slate-700 shrink-0 pl-1">
               {costBreakdown.extraCost > 0 ? `+Rp ${costBreakdown.extraCost.toLocaleString('id-ID')}` : 'Termasuk'}
             </span>
           </div>
 
           {appliedVoucher && (
-            <div className="flex justify-between items-center text-xs text-emerald-700 font-bold pt-1 border-t border-[#272a33]/10">
+            <div className="flex justify-between items-center text-[11px] text-emerald-700 font-bold pt-1 border-t border-[#272a33]/10">
               <div className="flex items-center gap-1">
-                <Ticket className="w-3.5 h-3.5" />
+                <Ticket className="w-3 h-3" />
                 <span>Kupon: {appliedVoucher.code}</span>
               </div>
               <span className="font-mono-tech">
@@ -295,27 +295,27 @@ export default function PaymentScreen() {
             </div>
           )}
 
-          <div className="flex justify-between items-center pt-1.5 border-t-2 border-[#272a33]/20">
-            <span className="text-xs font-black text-slate-900 uppercase">Total Tagihan:</span>
-            <span className={`text-base sm:text-lg font-black font-mono-tech ${isVipFree ? 'text-emerald-700' : 'text-[#343a59]'}`}>
+          <div className="flex justify-between items-center pt-1 border-t-2 border-[#272a33]/20">
+            <span className="text-[11px] font-black text-slate-900 uppercase">Total Tagihan:</span>
+            <span className={`text-sm sm:text-base font-black font-mono-tech ${isVipFree ? 'text-emerald-700' : 'text-[#343a59]'}`}>
               {isVipFree ? 'GRATIS (Rp 0)' : `Rp ${effectivePrice.toLocaleString('id-ID')}`}
             </span>
           </div>
         </div>
 
         {/* ================= VOUCHER INPUT ACCORDION / BOX ================= */}
-        <div className="w-full mt-2.5">
+        <div className="w-full mt-2">
           {appliedVoucher ? (
-            <div className="p-2 rounded-2xl bg-emerald-50 border-2 border-emerald-500 flex items-center justify-between gap-2 shadow-sm text-left">
-              <div className="flex items-center gap-2 overflow-hidden">
+            <div className="p-1.5 rounded-xl bg-emerald-50 border-2 border-emerald-500 flex items-center justify-between gap-2 shadow-sm text-left">
+              <div className="flex items-center gap-1.5 overflow-hidden">
                 <div className="p-1 rounded-lg bg-emerald-500 text-white shrink-0">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3 h-3" />
                 </div>
                 <div className="truncate">
-                  <p className="text-xs font-black text-emerald-900 font-mono-tech truncate">
+                  <p className="text-[11px] font-black text-emerald-900 font-mono-tech truncate">
                     {appliedVoucher.code} • {appliedVoucher.description}
                   </p>
-                  <p className="text-[10px] text-emerald-700 font-medium">
+                  <p className="text-[9px] text-emerald-700 font-medium">
                     {appliedVoucher.isFree ? '100% Bebas Biaya' : `Potongan Rp ${appliedVoucher.discountAmount.toLocaleString('id-ID')}`}
                   </p>
                 </div>
@@ -323,29 +323,29 @@ export default function PaymentScreen() {
               <button
                 type="button"
                 onClick={handleRemoveVoucher}
-                className="px-2 py-1 rounded-xl bg-white hover:bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold shrink-0 cursor-pointer transition-all flex items-center gap-1"
+                className="px-2 py-0.5 rounded-lg bg-white hover:bg-red-50 text-red-600 border border-red-200 text-[9px] font-bold shrink-0 cursor-pointer transition-all flex items-center gap-1"
                 title="Batalkan Voucher"
               >
-                <X className="w-3 h-3" />
+                <X className="w-2.5 h-2.5" />
                 <span>Batal</span>
               </button>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {!showVoucherForm ? (
                 <button
                   type="button"
                   onClick={() => setShowVoucherForm(true)}
-                  className="w-full py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-amber-50/60 border border-dashed border-slate-300 hover:border-amber-400 text-slate-700 hover:text-amber-900 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  className="w-full py-1 px-2.5 rounded-xl bg-slate-50 hover:bg-amber-50/60 border border-dashed border-slate-300 hover:border-amber-400 text-slate-700 hover:text-amber-900 text-[10.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <Ticket className="w-3.5 h-3.5 text-amber-600" />
+                  <Ticket className="w-3 h-3 text-amber-600" />
                   <span>Punya Kode Kupon / Voucher VIP? (Tap Di Sini)</span>
                 </button>
               ) : (
-                <form onSubmit={handleApplyVoucher} className="p-2.5 rounded-2xl bg-slate-50 border-2 border-[#272a33] text-left space-y-2">
+                <form onSubmit={handleApplyVoucher} className="p-2 rounded-xl bg-slate-50 border-2 border-[#272a33] text-left space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Gift className="w-3.5 h-3.5 text-pink-600" />
+                    <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                      <Gift className="w-3 h-3 text-pink-600" />
                       <span>Masukkan Kode Kupon / Voucher VIP</span>
                     </label>
                     <button
@@ -356,29 +356,29 @@ export default function PaymentScreen() {
                       }}
                       className="text-slate-400 hover:text-slate-700 text-xs"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <input
                       type="text"
                       value={voucherCodeInput}
                       onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase())}
                       placeholder="Contoh: VIPFREE / PANITIA"
-                      className="flex-1 px-3 py-1.5 rounded-xl bg-white border-2 border-[#272a33] text-xs font-black tracking-wider text-slate-900 font-mono-tech placeholder:text-slate-400 uppercase focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="flex-1 px-2.5 py-1 rounded-lg bg-white border-2 border-[#272a33] text-[11px] font-black tracking-wider text-slate-900 font-mono-tech placeholder:text-slate-400 uppercase focus:outline-none focus:ring-2 focus:ring-amber-400"
                       autoFocus
                     />
                     <button
                       type="submit"
-                      className="px-4 py-1.5 rounded-xl bg-[#272a33] text-amber-300 hover:bg-[#1a1c22] font-black text-xs border-2 border-[#272a33] shadow-[2px_2px_0px_#fde047] cursor-pointer transition-all shrink-0 active:scale-95"
+                      className="px-3 py-1 rounded-lg bg-[#272a33] text-amber-300 hover:bg-[#1a1c22] font-black text-[11px] border-2 border-[#272a33] shadow-[2px_2px_0px_#fde047] cursor-pointer transition-all shrink-0 active:scale-95"
                     >
                       Pakai
                     </button>
                   </div>
 
                   {voucherMessage && (
-                    <p className={`text-[11px] font-bold flex items-center gap-1 ${
+                    <p className={`text-[10px] font-bold flex items-center gap-1 ${
                       voucherMessage.type === 'success' ? 'text-emerald-700' : 'text-rose-600'
                     }`}>
                       <span>{voucherMessage.type === 'success' ? '✓' : '⚠'} {voucherMessage.text}</span>
@@ -391,50 +391,50 @@ export default function PaymentScreen() {
         </div>
 
         {/* Primary Action Button (VIP Free vs QRIS simulator) */}
-        <div className="w-full mt-3 flex flex-col gap-1">
+        <div className="w-full mt-2 flex flex-col gap-0.5">
           {isVipFree ? (
             <button
               onClick={() => handlePaymentSuccess()}
-              className="w-full py-3.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-[#272a33] border-3 border-[#272a33] shadow-[4px_4px_0px_#272a33] font-display font-black text-sm flex items-center justify-center gap-2 transition-all transform hover:scale-102 active:scale-98 cursor-pointer"
+              className="w-full py-2.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-[#272a33] border-3 border-[#272a33] shadow-[3px_3px_0px_#272a33] font-display font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all transform hover:scale-102 active:scale-98 cursor-pointer"
             >
               <span>Mulai Sesi Foto ({selectedFrame?.poses || 3} Pose)</span>
-              <ArrowRight className="w-4 h-4 text-[#272a33]" />
+              <ArrowRight className="w-3.5 h-3.5 text-[#272a33]" />
             </button>
           ) : (
             <button
               disabled={isProcessing}
               onClick={handleSimulatePayment}
-              className="w-full py-3 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[4px_4px_0px_#10b981] font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-2 border-[#272a33] shadow-[3px_3px_0px_#10b981] font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer disabled:opacity-50"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                   <span>Memverifikasi Pembayaran...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Simulasi Bayar Berhasil (Tap Di Sini)</span>
                 </>
               )}
             </button>
           )}
-          <span className="text-[10px] text-slate-500 font-medium">
+          <span className="text-[9.5px] text-slate-500 font-medium">
             {isVipFree ? '*Sesi foto langsung dimulai' : '*Sistem otomatis mendeteksi saat uang masuk dari QRIS'}
           </span>
         </div>
       </div>
 
       {/* ================= BOTTOM FOOTER ================= */}
-      <div className="w-full max-w-4xl flex justify-between items-end z-20">
+      <div className="w-full max-w-3xl flex justify-between items-center z-20 pt-1">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600 font-medium">
+          <span className="text-[11px] text-slate-600 font-medium bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full border border-slate-300 shadow-sm">
             Pilihan: <strong className="text-slate-900">{selectedFrame?.name}</strong> • <strong className="text-purple-700 font-bold">{costBreakdown.chosenCopies} Lembar Cetak</strong>
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium hidden sm:flex">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full border border-slate-300 shadow-sm">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
           <span>Transaksi aman & terverifikasi otomatis</span>
         </div>
       </div>
