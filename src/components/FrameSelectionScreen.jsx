@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBooth } from '../context/BoothContext';
-import { LayoutGrid, Check, ArrowRight, Sparkles, Printer, Plus, Minus, Layers, Tag } from 'lucide-react';
+import { LayoutGrid, Check, ArrowRight, ArrowLeft, Sparkles, Printer, Plus, Minus, Layers, Tag } from 'lucide-react';
 
 export default function FrameSelectionScreen() {
   const { 
@@ -8,19 +8,21 @@ export default function FrameSelectionScreen() {
     selectedFrame, 
     handleSelectFrameAndProceed,
     sessionCopies,
-    eventSettings 
+    eventSettings,
+    resetToAttract
   } = useBooth();
 
   const [activeTemplate, setActiveTemplate] = useState(() => selectedFrame || availableFrames[0]);
 
-  // Multi-print config
-  const defaultCopies = Math.max(1, Number(eventSettings.defaultPrintCopies) || 2);
+  // Multi-print config: Minimum 2 copies (twin strip base)
+  const minCopies = Math.max(2, Number(eventSettings.defaultPrintCopies) || 2);
+  const defaultCopies = minCopies;
   const maxCopies = Math.max(defaultCopies, Number(eventSettings.maxPrintCopies) || 6);
   const allowSelectCopies = eventSettings.allowGuestSelectCopies !== false;
   const isPaidExtra = eventSettings.extraCopyMode === 'paid';
   const extraPricePerCopy = Number(eventSettings.extraCopyPrice) || 10000;
 
-  const [chosenCopies, setChosenCopies] = useState(() => sessionCopies || defaultCopies);
+  const [chosenCopies, setChosenCopies] = useState(() => Math.max(minCopies, Number(sessionCopies) || defaultCopies));
 
   // Sync if available frames change
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function FrameSelectionScreen() {
 
   const framesToDisplay = availableFrames && availableFrames.length > 0 ? availableFrames : [selectedFrame];
 
-  // Price Calculation for Display
+  // Price Calculation for Display: Base (35k) + (Extra Copies * 10k)
   const basePrice = Number(eventSettings.price) || 35000;
   const extraCopiesCount = Math.max(0, chosenCopies - defaultCopies);
   const extraCost = isPaidExtra ? (extraCopiesCount * extraPricePerCopy) : 0;
@@ -39,10 +41,8 @@ export default function FrameSelectionScreen() {
   const isFreeMode = eventSettings.eventMode === 'free';
 
   // Available preset copy options (e.g. 2, 4, 6)
-  const presetOptions = [defaultCopies];
-  if (defaultCopies * 2 <= maxCopies) presetOptions.push(defaultCopies * 2);
-  if (defaultCopies * 3 <= maxCopies) presetOptions.push(defaultCopies * 3);
-  if (!presetOptions.includes(maxCopies) && maxCopies > defaultCopies) presetOptions.push(maxCopies);
+  const presetOptions = [2, 4, 6].filter(n => n >= minCopies && n <= maxCopies);
+  if (!presetOptions.includes(defaultCopies)) presetOptions.unshift(defaultCopies);
 
   return (
     <div className="relative w-full h-screen flex flex-col justify-between items-center p-5 md:p-8 bg-grid-notebook text-slate-900 overflow-hidden select-none">
@@ -236,7 +236,7 @@ export default function FrameSelectionScreen() {
               </div>
               <p className="text-[11px] text-slate-500 font-medium">
                 {isPaidExtra 
-                  ? `Paket sudah termasuk ${defaultCopies} lembar cetak. Tambahan: +Rp ${extraPricePerCopy.toLocaleString('id-ID')}/lbr` 
+                  ? `Paket standar sudah termasuk ${defaultCopies} lembar cetak. Tambahan: +Rp ${extraPricePerCopy.toLocaleString('id-ID')}/lbr` 
                   : `Tentukan berapa lembar strip foto fisik yang ingin kamu cetak`}
               </p>
             </div>
@@ -274,13 +274,14 @@ export default function FrameSelectionScreen() {
               })}
             </div>
 
-            {/* Stepper (+ / -) */}
+            {/* Stepper (+ / -) -> Min copies is locked to minCopies (2) */}
             <div className="flex items-center bg-slate-100 rounded-xl border border-slate-300 p-0.5 ml-1">
               <button
                 type="button"
-                onClick={() => setChosenCopies(Math.max(1, chosenCopies - 1))}
-                disabled={chosenCopies <= 1}
+                onClick={() => setChosenCopies(Math.max(minCopies, chosenCopies - 1))}
+                disabled={chosenCopies <= minCopies}
                 className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-800 font-bold disabled:opacity-30 cursor-pointer"
+                title={chosenCopies <= minCopies ? `Minimal cetak adalah ${minCopies} lembar` : 'Kurangi 1 lembar'}
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
@@ -292,6 +293,7 @@ export default function FrameSelectionScreen() {
                 onClick={() => setChosenCopies(Math.min(maxCopies, chosenCopies + 1))}
                 disabled={chosenCopies >= maxCopies}
                 className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-800 font-bold disabled:opacity-30 cursor-pointer"
+                title={chosenCopies >= maxCopies ? `Maksimal cetak adalah ${maxCopies} lembar` : 'Tambah 1 lembar'}
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -302,23 +304,36 @@ export default function FrameSelectionScreen() {
 
       {/* ================= BOTTOM ACTION BAR ================= */}
       <div className="w-full max-w-6xl flex justify-between items-center pt-2 sm:pt-3 border-t-2 border-[#272a33]/20 z-20">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600 font-medium">
-            Frame: <strong className="text-slate-900">{activeTemplate?.name}</strong> ({activeTemplate?.poses} Pose)
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-xs text-slate-600 font-medium">
-            Cetak: <strong className="text-purple-700 font-black">{chosenCopies} Lembar</strong>
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Tombol Kembali ke Halaman Pertama */}
+          <button
+            type="button"
+            onClick={resetToAttract}
+            className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-white hover:bg-slate-100 text-[#272a33] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] font-display font-bold text-xs sm:text-sm flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+            title="Kembali ke Layar Sentuh Awal"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#272a33]" />
+            <span>Kembali</span>
+          </button>
+
+          <div className="hidden sm:flex items-center gap-2 pl-1">
+            <span className="text-xs text-slate-600 font-medium">
+              Frame: <strong className="text-slate-900">{activeTemplate?.name}</strong> ({activeTemplate?.poses} Pose)
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="text-xs text-slate-600 font-medium">
+              Cetak: <strong className="text-purple-700 font-black">{chosenCopies} Lembar</strong>
+            </span>
+          </div>
         </div>
 
         <button
           onClick={() => handleSelectFrameAndProceed(activeTemplate, chosenCopies)}
-          className="px-8 sm:px-12 py-3 sm:py-3.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#3b82f6] font-display font-black text-xs sm:text-sm tracking-wide flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="px-6 sm:px-10 py-3 sm:py-3.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#3b82f6] font-display font-black text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
         >
           {isFreeMode ? (
             <>
-              <span>Mulai Sesi Foto ({activeTemplate.poses} Pose)</span>
+              <span>Mulai Sesi Foto ({activeTemplate?.poses || 3} Pose)</span>
               <ArrowRight className="w-4 h-4" />
             </>
           ) : (

@@ -341,8 +341,8 @@ export function BoothProvider({ children }) {
   // Helper to calculate total session cost including extra copies
   const calculateSessionCost = (copiesCount = sessionCopies) => {
     const basePrice = Number(eventSettings.price) || 35000;
-    const defaultCopies = Math.max(1, Number(eventSettings.defaultPrintCopies) || 2);
-    const count = copiesCount || defaultCopies;
+    const defaultCopies = Math.max(2, Number(eventSettings.defaultPrintCopies) || 2);
+    const count = Math.max(defaultCopies, Number(copiesCount) || defaultCopies);
     const extraCopiesCount = Math.max(0, count - defaultCopies);
     const isPaidExtraMode = eventSettings.extraCopyMode === 'paid';
     const extraCopyPrice = Number(eventSettings.extraCopyPrice) || 10000;
