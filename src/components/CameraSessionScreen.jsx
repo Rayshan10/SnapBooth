@@ -244,18 +244,29 @@ export default function CameraSessionScreen() {
     }, 1000);
   };
 
-  // Auto trigger countdown when entering pose and camera stream is active
-  useEffect(() => {
-    if (!streamActive && !cameraError) return;
+  // Keyboard shortcut: Spacebar or Enter to trigger countdown
+  const countdownRef = useRef(countdown);
+  const streamActiveRef = useRef(streamActive);
+  const cameraErrorRef = useRef(cameraError);
 
-    const timer = setTimeout(() => {
-      startCountdownSequence();
-    }, 1200);
-    return () => {
-      clearTimeout(timer);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+  useEffect(() => { countdownRef.current = countdown; }, [countdown]);
+  useEffect(() => { streamActiveRef.current = streamActive; }, [streamActive]);
+  useEffect(() => { cameraErrorRef.current = cameraError; }, [cameraError]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space' || e.key === 'Enter') {
+        if (countdownRef.current === null && (streamActiveRef.current || cameraErrorRef.current)) {
+          e.preventDefault();
+          startCountdownSequence();
+        }
+      }
     };
-  }, [currentPoseIndex, streamActive, cameraError]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   return (
     <div className="relative w-full h-screen flex flex-col justify-between items-center p-6 md:p-8 bg-grid-notebook text-slate-900 overflow-hidden select-none">
@@ -321,15 +332,6 @@ export default function CameraSessionScreen() {
 
         {/* Right Action: Mirror Toggle & Page 04 Badge */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsMirrored(!isMirrored)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#272a33] text-white shadow-md hover:bg-[#1a1c22] hover:scale-105 active:scale-95 transition-all text-xs font-bold font-mono-tech cursor-pointer border border-[#272a33]"
-            title="Cerminkan Kamera (Mirror)"
-          >
-            <FlipHorizontal className="w-4 h-4 text-amber-300" />
-            <span>Mirror: {isMirrored ? 'ON' : 'OFF'}</span>
-          </button>
-
           {/* Page 04 Badge */}
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#272a33] text-white shadow-md">
             <span className="text-sm font-bold tracking-wide font-display pl-1">Page</span>
@@ -362,6 +364,14 @@ export default function CameraSessionScreen() {
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
               {cameraError || 'Kamera sedang disiapkan. Jepretan foto otomatis disimulasikan secara jernih.'}
             </p>
+          </div>
+        )}
+
+        {/* Idle Readiness Hint inside Viewfinder */}
+        {countdown === null && (
+          <div className="absolute bottom-4 z-20 px-4 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-xs font-semibold flex items-center gap-2 pointer-events-none shadow-lg animate-pulse">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Posisikan gayamu, lalu tekan tombol di bawah saat siap!</span>
           </div>
         )}
 
@@ -417,15 +427,38 @@ export default function CameraSessionScreen() {
       </div>
 
       {/* ================= BOTTOM SHUTTER ACTION BAR ================= */}
-      <div className="w-full max-w-xl flex items-center justify-center gap-6 z-20 pt-1">
-        <button
-          onClick={startCountdownSequence}
-          disabled={countdown !== null}
-          className="px-10 sm:px-14 py-4 sm:py-4.5 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#fde047] font-display font-black text-base sm:text-lg tracking-wide flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Camera className="w-6 h-6 text-amber-300" />
-          <span>{countdown !== null ? 'Sedang Menghitung...' : 'Jepret Foto Sekarang'}</span>
-        </button>
+      <div className="w-full max-w-2xl flex flex-col items-center gap-2 z-20 pt-1">
+        <div className="flex items-center gap-3">
+          {/* Mirror Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsMirrored(!isMirrored)}
+            className="px-4 py-3 sm:py-3.5 rounded-full bg-white hover:bg-slate-100 text-[#272a33] border-2 border-[#272a33] shadow-[3px_3px_0px_#272a33] font-display font-bold text-xs sm:text-sm flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+            title="Cerminkan Kamera (Mirror)"
+          >
+            <FlipHorizontal className="w-4 h-4 text-purple-600" />
+            <span>Mirror: {isMirrored ? 'ON' : 'OFF'}</span>
+          </button>
+
+          {/* Shutter Countdown Trigger Button */}
+          <button
+            onClick={startCountdownSequence}
+            disabled={countdown !== null}
+            className="px-8 sm:px-12 py-3.5 sm:py-4 rounded-full bg-[#272a33] text-white hover:bg-[#1a1c22] border-3 border-[#272a33] shadow-[4px_4px_0px_#fde047] font-display font-black text-sm sm:text-base tracking-wide flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Camera className="w-5 h-5 text-amber-300" />
+            <span>
+              {countdown !== null 
+                ? `Menghitung Mundur... (${countdown})` 
+                : `Mulai Hitung Mundur (${countdownInitial}s)`
+              }
+            </span>
+          </button>
+        </div>
+
+        <p className="text-[11px] text-slate-500 font-medium text-center">
+          Atur posisi & mode mirror, lalu tekan tombol saat kamu sudah siap foto
+        </p>
       </div>
     </div>
   );
